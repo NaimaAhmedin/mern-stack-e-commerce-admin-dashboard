@@ -1,52 +1,28 @@
 import React from 'react';
 import { GoArrowDownRight, GoArrowUpRight } from "react-icons/go";
-import Chart from './chart';
-import { Column } from '@ant-design/plots';
-
+import { Column, Pie } from '@ant-design/plots';
 import '../../App.css';
-const data1 = [];
-  for (let i=0; i<46; i++)
-    {
-        data1.push({
-    key: i,
-    name: `Edward King ${i}`,
-    product: 32,
-    status: `London, Park Lane no. ${i}`,
-  });}
-
-
-const orderData = [];
-for (let i = 0; i < 45; i++) {
-  orderData.push({
-    key: i,
-    name: `Neima Ahemdin ${i}`,
-    Product: 32,
-    status: `Addis Abeba, Mexico no.${i}`,
-  });
-}
-
 
 const Dashboard = () => {
-    const data = [
-        { type: 'Jan', products: 30 },
-        { type: 'Feb', products: 48 },
-        { type: 'Mar', products: 28 },
-        { type: 'Apr', products: 34 },
-        { type: 'May', products: 30 },
-        { type: 'Jun', products: 44 },
-        { type: 'July', products: 48 },
-        { type: 'Aug', products: 30 },
-        { type: 'Sept', products: 28 },
-        { type: 'Oct', products: 48 },
-        { type: 'Nov', products: 44 },
-        { type: 'Dec', products: 40 },
-    ];
+  const data1 = [
+    { type: 'Jan', sales: 30 },
+    { type: 'Feb', sales: 48 },
+    { type: 'Mar', sales: 28 },
+    { type: 'Apr', sales: 34 },
+    { type: 'May', sales: 30 },
+    { type: 'Jun', sales: 44 },
+    { type: 'Jul', sales: 48 },
+    { type: 'Aug', sales: 30 },
+    { type: 'Sep', sales: 28 },
+    { type: 'Oct', sales: 48 },
+    { type: 'Nov', sales: 44 },
+    { type: 'Dec', sales: 40 },
+  ];
 
-   
   const config = {
-    data,
+    data: data1, // Pass data correctly here
     xField: 'type',
-    yField: 'products',
+    yField: 'sales',
     color: '#ffd333',
     label: {
       position: 'top', 
@@ -65,21 +41,48 @@ const Dashboard = () => {
       type: {
         alias: 'Month',
       },
-      products: {
-        alias: 'product',
+      sales: {
+        alias: 'Income',
       },
     },
   };
 
+  const [pieData, setPieData] = React.useState([]);
+
+  React.useEffect(() => {
+    // Simulate fetching data
+    setTimeout(() => {
+      setPieData([
+        { type: 'Category 1', value: 27 },
+        { type: 'Category 2', value: 25 },
+        { type: 'Category 3', value: 18 },
+        { type: 'Category 4', value: 15 },
+        { type: 'Category 5', value: 10 },
+        { type: 'Category 6', value: 5 },
+      ]);
+    }, 1000);
+  }, []);
+
+  const config2 = {
+    data: pieData, // Ensure data is passed correctly here
+    angleField: 'value',
+    colorField: 'type',
+    label: {
+      type: 'outer',
+      content: '{name} {percentage}',
+    },
+    legend: {
+      position: 'right',
+    },
+  };
+
   return (
-    <div style={{ backgroundColor: '#a0d1ea;', minHeight: '100vh', color: '#fff' }}>
-      {/* App Name Section */}
-      <div className="app-header" style={{ backgroundColor: '#ffd333', padding: '10px', textAlign: 'center' }}>
-        <h2 className="text-2xl "style={{ margin: 0, color: '#000' }}>Merkato Ecommerce App</h2>
+    <div style={{ backgroundColor: 'rgb(255, 255, 255)', minHeight: '100vh', color: '#fff' }}>
+      <div className="app-header h-11" style={{ backgroundColor: '#ffd333', padding: '10px', textAlign: 'center' }}>
+        <h2 className='text-black text-lg'>Merkato Ecommerce App</h2>
       </div>
 
-    
-      <h3 className='mb-4 text-2xl text-black'>Content Admin Dashboard</h3>
+      <h3 className='my-4 text-2xl text-black'>Delivery Admin Dashboard</h3>
       <div className='d-flex justify-content-between align-items-center gap-3'>
         <div className='d-flex justify-content-between align-items-end flex-grow-1 bg-dark p-3 rounded-3 '>
           <div>
@@ -109,24 +112,22 @@ const Dashboard = () => {
             <h4 className='mb-0'>1100</h4>
           </div>
           <div className='d-flex flex-column align-items-end'>
-            <h6 className='text-green-400'><GoArrowUpRight />
-            32%</h6>
+            <h6 className='text-green-400'><GoArrowUpRight /> 32%</h6>
             <p className='mb-0' style={{ color: '#ccc' }}>Compared To Last Month</p>
           </div>
         </div>
       </div>
+
       <div className="flex space-x-4 mt-4">
-            <div className="flex-1 bg-white p-4 rounded shadow">
-                <h3 className="my-4 text-3xl font-bold text-black">Product Statistics</h3>
-                <div>
-                    <Column {...config} />
-                </div>
-            </div>
-            <div className="w-1/3 bg-white p-4 rounded shadow">
-                <Chart/>
-            </div>
+        <div className="flex-1 bg-white p-4 rounded shadow">
+          <h3 className="my-4 text-3xl font-bold text-black">Order Statistics</h3>
+          <Column {...config} /> {/* Ensure config is passed correctly */}
         </div>
-      {/* Any other sections can be added here */}
+        <div className="w-1/3 bg-white p-4 rounded shadow">
+          <h3 className="my-4 text-2xl font-bold text-black">Delivery Statistics</h3>
+          <Pie {...config2} />
+        </div>
+      </div>
     </div>
   );
 };

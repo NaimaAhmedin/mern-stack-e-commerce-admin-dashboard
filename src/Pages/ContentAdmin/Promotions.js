@@ -83,7 +83,7 @@ const Promotions = () => {
             <MdSearch className="absolute right-2 top-2 text-gray-500" size={20} />
           </div>
           <button
-            onClick={() => navigate('/Content-Admin/promotions/create')}
+            onClick={() => navigate('/Content-Admin/promotion/create')}
             className="bg-orange-600 text-white px-4 py-2 rounded-3xl"
           >
             + Create
@@ -132,7 +132,7 @@ const Promotions = () => {
               </Button>
               <Button 
                 type="link" 
-                onClick={() => navigate(`/Content-Admin/promotions/edit/${record.key}`, { state: record })}>
+                onClick={() => navigate(`/Content-Admin/promotion/edit/${record.key}`, { state: record })}>
                 Edit
               </Button>
             </span>

@@ -3,6 +3,7 @@ import { Route } from 'react-router-dom';
 import Dashboard1 from '../../Pages/ContentAdmin/Dashboard';
 import ContentadminMainLayout from '../../Components/ContentAdmin/ContentadminMainLayout';
 import ProductControl from '../../Pages/ContentAdmin/ProductControl'
+import SellersList from '../../Pages/ContentAdmin/SellersList';
 import Promotions from '../../Pages/ContentAdmin/Promotions';
 import CreatePromotion from '../../Pages/ContentAdmin/CreatePromotion'; 
 import EditPromotion from '../../Pages/ContentAdmin/EditPromotion'; 
@@ -18,9 +19,11 @@ import Profile from '../../Pages/ContentAdmin/Profile';
   return [
     <Route path="/Content-Admin" element={<ContentadminMainLayout />} key="ContentAdminMainLayout">
       <Route index element={<Dashboard1 />} />
+      <Route path='ProductList' element={<ProductControl />} />
+      <Route path="SellerList" element={<SellersList />} />
       <Route path="Promotion" element={<Promotions />} />
-      <Route path="Promotion/create" element={<CreatePromotion/>}/>
-      <Route path="Promotion/edit/:id" element={<EditPromotion/>}/>
+      <Route path="promotion/create" element={<CreatePromotion/>}/>
+      <Route path="promotion/edit/:id" element={<EditPromotion/>}/>
       <Route path="settings/profile" element={<Profile />} />
       <Route path="category" element={<CategoryList categories={categories} setCategories={setCategories} />} />
       <Route path="category/create" element={<CreateCategory addCategory={addCategory} />} />
@@ -28,7 +31,6 @@ import Profile from '../../Pages/ContentAdmin/Profile';
       <Route path="subcategory" element={<SubCategoryList subCategories={subCategories} categories={categories} setSubCategories={setSubCategories} />} />
       <Route path="subcategory/create" element={<CreateSubCategory addSubCategory={addSubCategory} categories={categories} />} />
       <Route path="subcategory/edit/:id" element={<EditSubCategory />} />
-      <Route path='ProductList' element={<ProductControl />} />
       <Route path='dashboard' element={<Dashboard1 />} />
     </Route>
   ];

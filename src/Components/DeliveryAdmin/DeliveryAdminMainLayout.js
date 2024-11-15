@@ -1,23 +1,22 @@
 import React, { useState } from 'react';
 import { MenuFoldOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { MdDashboard } from 'react-icons/md';
+import { MdDashboard, MdOutlineLocalShipping,  MdOutlinePending, MdOutlineSmsFailed } from 'react-icons/md';
 import { Layout, Menu, Dropdown, theme } from 'antd';
-import { AiOutlineProduct } from 'react-icons/ai';
+import {  AiOutlineShoppingCart, AiOutlineUser } from 'react-icons/ai';
 import { IoMdNotifications } from 'react-icons/io';
 import { Outlet } from 'react-router-dom';
 import { MdCategory } from "react-icons/md";
 import { TbCategoryPlus } from "react-icons/tb";
-import { MdOutlineCampaign } from "react-icons/md";
 import { IoSettingsSharp } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { MdOutlineControlCamera } from "react-icons/md";
-import { MdOutlineContentPasteSearch } from "react-icons/md";
-import { FaUserTie } from "react-icons/fa"; // Icon for Sellers
+import { FaClipboardList, FaUser} from "react-icons/fa"; // Icon for Sellers
+import { GrCompliance } from 'react-icons/gr';
 
 const { Header, Sider, Content } = Layout;
 
-const ContentadminMainLayout = () => {
+const DeliveryAdminMainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -31,7 +30,7 @@ const ContentadminMainLayout = () => {
         if (key === "signout") {
           navigate('/');
         } else if (key === "profile") {
-          navigate('/Content-Admin/settings/profile');
+          navigate('/DeliveryAdmin/settings/profile');
         }
       }}
       items={[
@@ -71,49 +70,61 @@ const ContentadminMainLayout = () => {
               label: 'Dashboard',
             },
             {
-              key: "content-management",
-              icon: <MdOutlineContentPasteSearch className="fs-4" />,
-              label: 'Contents',
+              key: "Order",
+              icon: <FaClipboardList className="fs-4" />,
+              label: 'Order',
               children: [
                 {
-                  key: "ProductList",
-                  icon: <MdOutlineControlCamera className="fs-4" />,
-                  label: 'Product List',
+                  key: "AllOrders",
+                  icon: <AiOutlineShoppingCart className="fs-4" />,
+                  label: 'AllOrders',
                 },
                 {
-                  key: "SellerList",
-                  icon: <FaUserTie className="fs-4" />,
-                  label: 'Sellers List',
+                  key: "PendingOrders",
+                  icon: <MdOutlinePending className="fs-4" />,
+                  label: 'Pending Orders',
+                },
+                
+                {
+                  key: "ProcessingOrders",
+                  icon: <MdOutlineLocalShipping className="fs-4" />,
+                  label: 'Processing Orders',
+                },
+                {
+                  key: "DeliveredOrders",
+                  icon: <GrCompliance className="fs-4" />,
+                  label: 'Delivered Orders',
+                },
+                {
+                  key: "failedOrders",
+                  icon: <MdOutlineSmsFailed className="fs-4" />,
+                  label: 'Failed Orders',
                 },
               ],
             },            
             {
-              key: "promotion-management",
-              icon: <AiOutlineProduct className="fs-4" />,
-              label: 'Promotions',
+              key: "Delivery-Personnel",
+              icon: <FaUser className="fs-4" />,
+              label: 'Delivery Personnel',
               children: [
                 {
-                  key: "promotion",
-                  icon: <MdOutlineCampaign className="fs-4" />,
-                  label: 'Promotion',
+                  key: "Personnel-List",
+                  icon: <AiOutlineUser className="fs-4" />,
+                  label: 'Personnel List',
                 },
               ],
             },
             {
-              key: "categories",
+              key: "Follow-ups",
               icon: <TbCategoryPlus className="fs-4" />,
-              label: 'Categories',
+              label: 'Follow Ups',
               children: [
                 {
-                  key: "category",
+                  key: "complaints",
                   icon: <MdCategory className="fs-4" />,
-                  label: 'Categories',
+                  label: 'complaints',
                 },
-                {
-                  key: "subcategory",
-                  icon: <MdCategory className="fs-4" />,
-                  label: 'Sub Category',
-                },
+               
               ],
             },
             {
@@ -182,4 +193,4 @@ const ContentadminMainLayout = () => {
   );
 };
 
-export default ContentadminMainLayout;
+export default DeliveryAdminMainLayout;

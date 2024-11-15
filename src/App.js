@@ -9,7 +9,8 @@ import HeadphoneImage from './Images/Headphone.jpg';
 import PhoneImage from './Images/Phone.jpg'; 
 import ContentAdminRoutes from './Components/ContentAdmin/ContentAdminRoutes';
 import SuperAdminRoutes from './Components/SuperAdmin/SuperAdminRoutes';
-
+import DeliveryAdminRoutes from './Components/DeliveryAdmin/DeliveryAdminRoutes';
+import Dashboard from './Pages/DeliveryAdmin/Dashboard1'
 function App() {
 
   const [categories, setCategories] = useState([
@@ -36,13 +37,13 @@ function App() {
         <Route path="/register" element={<Register/>}/>
         <Route path="/reset-password" element={<RestPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
+        <Route path="/dashboard1" element={<Dashboard/>}/>
         {/* Main Admin Routes */}
         {SuperAdminRoutes()}
 
         {/* Content Admin Routes */}
         {ContentAdminRoutes({ categories, setCategories, subCategories, setSubCategories, addCategory, addSubCategory })}
-             
+        {DeliveryAdminRoutes()}           
       </Routes>
     </Router>
   );

@@ -1,17 +1,19 @@
-import React from 'react'
+import React from 'react';
 
-const Custominput = (props) => {
-    const {type,label,i_id,i_class}=props
+const CustomInput = ({ type, label, id, value, onChange, i_class }) => {
   return (
     <div className="form-floating mb-3">
-<input 
-type={type}
-className={`form-control ${i_class}`} 
-id={`floatingInput ${i_id}`} 
-placeholder={label}/>
-    <label htmlFor={label}>{label}</label>
+      <input
+        type={type}
+        className={`form-control ${i_class}`}
+        id={`floatingInput ${id}`} // Using `id` instead of `i_id`
+        placeholder={label}
+        value={value} // Added value prop
+        onChange={onChange} // Added onChange prop
+      />
+      <label htmlFor={id}>{label}</label> {/* Fixed htmlFor to use id */}
     </div>
-  )
-}
+  );
+};
 
-export default Custominput
+export default CustomInput;
