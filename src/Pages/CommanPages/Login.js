@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CustomInput from "../../Components/Custominput";
 import { Link } from "react-router-dom";
+
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const navigate = useNavigate();  // Hook for navigation
 
+  // Handle login form submission
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(''); // Reset error message before each login attempt
 
     try {
-      const response = await fetch('http://localhost:1337/api/login', {
+      const response = await fetch('http://localhost:1337/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -20,17 +24,30 @@ const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-      if(data.user){
-        alert('login successful')
-        
+      const result = await response.json();
+
+      if (response.status === 200) {
+        localStorage.setItem('token', result.token);  // Store token in localStorage
+        localStorage.setItem('role', result.role);    // Optionally store user role
+
+        // Navigate based on the user's role
+        if (result.role === 'admin') {
+          navigate('/admin');  // Redirect to admin dashboard
+        } else if (result.role === 'Content_Admin') {
+          navigate('/Content-Admin');   // Redirect to user dashboard
+        } else if (result.role === 'Delivery_Admin') {
+          navigate('/DeliveryAdmin');   // Redirect to user dashboard
+        } 
+        else {
+          navigate('/'); // Default redirect if role is undefined or unexpected
+        }
+
+        console.log('Login successful');
+      } else {
+        setError(result.msg);  // Display error message if login fails
       }
-      else {
-        alert('please check username and password')
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      setError('An error occurred. Please try again later.');
+    } catch (error) {
+      setError('Login failed. Please try again.');
     }
   };
 

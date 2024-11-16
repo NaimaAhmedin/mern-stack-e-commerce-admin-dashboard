@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, message,  } from 'antd';
+import { Table, Button, Modal,   } from 'antd';
 import Ordereditemlist from './Ordereditemlist';
 import { MdSearch } from "react-icons/md";
 // const { Option } = Select;
@@ -184,7 +184,7 @@ const Pendingorders = () => {
   const [costBreakdownModalVisible, setCostBreakdownModalVisible] = useState(false);
   const [costDetails, setCostDetails] = useState(null);
 
-  const [orders, setOrders] = useState(data1);
+  const [orders] = useState(data1);
   const [searchTerm, setSearchTerm] = useState('');
 
   const showProductDetails = (product) => {
