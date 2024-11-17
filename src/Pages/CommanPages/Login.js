@@ -37,6 +37,8 @@ const Login = () => {
           navigate('/Content-Admin');   // Redirect to user dashboard
         } else if (result.role === 'DeliveryAdmin') {
           navigate('/DeliveryAdmin');   // Redirect to user dashboard
+        } else if (result.role === 'seller') {
+          navigate('/seller');   // Redirect to seller dashboard
         } 
         else {
           navigate('/'); // Default redirect if role is undefined or unexpected
