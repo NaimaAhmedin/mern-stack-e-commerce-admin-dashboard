@@ -31,11 +31,11 @@ const Login = () => {
         localStorage.setItem('role', result.role);    // Optionally store user role
 
         // Navigate based on the user's role
-        if (result.role === 'admin') {
+        if (result.role === 'SuperAdmin') {
           navigate('/admin');  // Redirect to admin dashboard
-        } else if (result.role === 'Content_Admin') {
+        } else if (result.role === 'ContentAdmin') {
           navigate('/Content-Admin');   // Redirect to user dashboard
-        } else if (result.role === 'Delivery_Admin') {
+        } else if (result.role === 'DeliveryAdmin') {
           navigate('/DeliveryAdmin');   // Redirect to user dashboard
         } 
         else {

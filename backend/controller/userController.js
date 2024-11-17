@@ -23,8 +23,7 @@ exports.createUser = async (req, res) => {
     return res.status(201).json({
       status: 'success',
       token,
-      data: newUser,
-    });
+      data: { id: newUser._id, username: newUser.username, role: newUser.role },    });
   } catch (err) {
     res.status(404).json({
       status: 'Error',

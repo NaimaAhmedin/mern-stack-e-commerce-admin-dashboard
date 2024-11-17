@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import CustomInput from "../../Components/Custominput";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -8,12 +8,12 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate(); // To navigate after successful registration
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
-  
 
     // Check if passwords match
     if (password !== confirmPassword) {
@@ -21,21 +21,40 @@ const Register = () => {
       return;
     }
 
-      const response = await fetch('http://localhost:1337/api/register', {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:1337/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        body:JSON.stringify({
-        name,
-        email,
-        password
-
-         })    
+        body: JSON.stringify({ 
+          username: name, 
+          email, 
+          password,
+          confirmPassword }),
       });
-     const data=await response.json()
-     console.log(data)
-   
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log(data);
+        alert("Registration successful!");
+        setName('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        localStorage.setItem('token', data.token);
+        navigate('/seller'); // Redirect to login or another page
+      } else {
+        setError(data.message || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error during registration:", err);
+      setError("An error occurred. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,9 +70,10 @@ const Register = () => {
           <CustomInput type="password" label="Confirm Password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
           <button 
             type="submit" 
-            className="block w-full py-3 text-center text-white font-semibold bg-yellow-400 rounded-md hover:bg-yellow-500 transition-colors"
+            className={`block w-full py-3 text-center text-white font-semibold bg-yellow-400 rounded-md hover:bg-yellow-500 transition-colors ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={loading}
           >
-            Register
+            {loading ? "Registering..." : "Register"}
           </button>
           <span className="block text-center text-gray-600 mt-4">
             Already have an account? <Link to="/" className="text-blue-500 hover:text-blue-600">Login</Link>

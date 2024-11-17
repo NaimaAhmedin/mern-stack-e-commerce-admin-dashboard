@@ -7,6 +7,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'User must have a username'],
   },
+  role: {
+    type: String,
+    defoult:"seller",
+  },
+  
   email: {
     type: String,
     required: [true, 'User must have an email'],

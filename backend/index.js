@@ -11,6 +11,7 @@ const app = express();
 dotenv.config({ path: './config.env' });
 
 // Middleware setup
+app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -22,7 +23,7 @@ mongoose.connect('mongodb://localhost:27017/markato-e-commerce')
   .catch((err) => console.error('DB connection error:', err));
 
 // Routes
-app.post('/user', userController.createUser);  // Create new user
+app.post('/register', userController.createUser);  // Create new user
 app.post('/login', userController.loginUser);  // Login user
 app.get('/', (req, res) => {  // Test server
   res.send('server is running');
