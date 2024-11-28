@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    defoult:"seller",
+   
   },
   
   email: {

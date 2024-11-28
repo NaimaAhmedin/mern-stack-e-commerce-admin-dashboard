@@ -8,29 +8,30 @@ const signToken = (id) => {
 
 // Create user
 exports.createUser = async (req, res) => {
-  const { username, email, password, confirmPassword } = req.body;
-
-  try {
-    const newUser = await User.create({
-      username,
-      email,
-      password,
-      confirmPassword,
-    });
-
-    const token = signToken(newUser._id);
-
-    return res.status(201).json({
-      status: 'success',
-      token,
-      data: { id: newUser._id, username: newUser.username, role: newUser.role },    });
-  } catch (err) {
-    res.status(404).json({
-      status: 'Error',
-      msg: err.message,
-    });
-  }
-};
+    const { username, role, email, password, confirmPassword } = req.body;
+  
+    try {
+      const newUser = await User.create({
+        username,
+        role,
+        email,
+        password,
+        confirmPassword,
+      });
+  
+      const token = signToken(newUser._id);
+  
+      return res.status(201).json({
+        status: 'success',
+        token,
+        data: { id: newUser._id, username: newUser.username, role: newUser.role },    });
+    } catch (err) {
+      res.status(404).json({
+        status: 'Error',
+        msg: err.message,
+      });
+    }
+  };
 
 // Login user
 exports.loginUser = async (req, res) => {
