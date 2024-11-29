@@ -159,8 +159,8 @@ const ContentadminMainLayout = () => {
                   style={{ width: '32px', height: '32px', borderRadius: '50%' }}
                 />
                 <div>
-                  <h5 className="mb-0">Mayita</h5>
-                  <p className="mb-0">naimaahmedin@gmail.com</p>
+                  <h5 className="mb-0">Content Admin</h5>
+                  <p className="mb-0">contentadmin@gmail.com</p>
                 </div>
               </div>
             </Dropdown>

@@ -167,8 +167,8 @@ const MainLayout = () => {
 </div>
 
                <div>
-                <h5 className='mb-0'>mayita</h5>
-                <p className='mb-0'>naimaahmedin@gmail.com</p>
+                <h5 className='mb-0'>Super Admin</h5>
+                <p className='mb-0'>admin@gmail.com</p>
                </div>
             </div>
          

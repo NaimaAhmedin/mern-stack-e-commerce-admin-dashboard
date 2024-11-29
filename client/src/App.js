@@ -11,6 +11,7 @@ import ContentAdminRoutes from './Components/ContentAdmin/ContentAdminRoutes';
 import SuperAdminRoutes from './Components/SuperAdmin/SuperAdminRoutes';
 import DeliveryAdminRoutes from './Components/DeliveryAdmin/DeliveryAdminRoutes';
 import SellerRoutes from './Components/seller/SellerRoutes';
+
 function App() {
 
   const [categories, setCategories] = useState([

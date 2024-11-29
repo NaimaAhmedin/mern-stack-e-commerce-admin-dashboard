@@ -3,18 +3,16 @@ import { MenuFoldOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { MdDashboard } from 'react-icons/md';
 import { Layout, Menu, Dropdown, theme } from 'antd';
-import { AiOutlineProduct } from 'react-icons/ai';
+import { AiOutlineOrderedList } from 'react-icons/ai';
 import { IoMdNotifications } from 'react-icons/io';
 import { Outlet } from 'react-router-dom';
 import { MdCategory } from "react-icons/md";
 import { TbCategoryPlus } from "react-icons/tb";
-import { MdOutlineCampaign } from "react-icons/md";
 import { IoSettingsSharp } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { MdOutlineControlCamera } from "react-icons/md";
 import { MdOutlineContentPasteSearch } from "react-icons/md";
-import { FaUserTie } from "react-icons/fa"; // Icon for Sellers
-
+import { FcMoneyTransfer } from "react-icons/fc";
 const { Header, Sider, Content } = Layout;
 
 const SellerMainLayout = () => {
@@ -71,38 +69,26 @@ const SellerMainLayout = () => {
               label: 'Dashboard',
             },
             {
-              key: "content-management",
+              key: "product-management",
               icon: <MdOutlineContentPasteSearch className="fs-4" />,
-              label: 'Contents',
+              label: 'Product Management',
               children: [
                 {
                   key: "ProductList",
                   icon: <MdOutlineControlCamera className="fs-4" />,
                   label: 'Product List',
                 },
-                {
-                  key: "SellerList",
-                  icon: <FaUserTie className="fs-4" />,
-                  label: 'Sellers List',
-                },
               ],
             },            
             {
-              key: "promotion-management",
-              icon: <AiOutlineProduct className="fs-4" />,
-              label: 'Promotions',
-              children: [
-                {
-                  key: "promotion",
-                  icon: <MdOutlineCampaign className="fs-4" />,
-                  label: 'Promotion',
-                },
-              ],
+              key: "Order-management",
+              icon: <AiOutlineOrderedList className="fs-4" />,
+              label: 'Orders',
             },
             {
-              key: "categories",
+              key: "Sales-Insight",
               icon: <TbCategoryPlus className="fs-4" />,
-              label: 'Categories',
+              label: 'Sales-Insight',
               children: [
                 {
                   key: "category",
@@ -126,6 +112,12 @@ const SellerMainLayout = () => {
                   icon: <CgProfile className="fs-4" />,
                   label: 'Profile',
                 },
+                {
+                  key: "settings/payment",
+                  icon: <FcMoneyTransfer className="fs-4" />,
+                  label: 'Payment Method',
+                },
+                
               ],
             },
           ]}
@@ -159,8 +151,8 @@ const SellerMainLayout = () => {
                   style={{ width: '32px', height: '32px', borderRadius: '50%' }}
                 />
                 <div>
-                  <h5 className="mb-0">Mayita</h5>
-                  <p className="mb-0">naimaahmedin@gmail.com</p>
+                  <h5 className="mb-0">seller</h5>
+                  <p className="mb-0">seller@gmail.com</p>
                 </div>
               </div>
             </Dropdown>
