@@ -1,4 +1,4 @@
-const User = require('../Schema/userSchema');
+const User = require('../Models/userSchema');
 const jwt = require('jsonwebtoken');
 
 // Utility to sign JWT token
