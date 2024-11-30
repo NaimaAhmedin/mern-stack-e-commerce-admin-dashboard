@@ -3,16 +3,15 @@ import { MenuFoldOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { MdDashboard } from 'react-icons/md';
 import { Layout, Menu, Dropdown, theme } from 'antd';
-import { AiOutlineOrderedList } from 'react-icons/ai';
+import { AiOutlineOrderedList,AiOutlineBarChart } from 'react-icons/ai';
 import { IoMdNotifications } from 'react-icons/io';
 import { Outlet } from 'react-router-dom';
-import { MdCategory } from "react-icons/md";
-import { TbCategoryPlus } from "react-icons/tb";
 import { IoSettingsSharp } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
 import { MdOutlineControlCamera } from "react-icons/md";
 import { MdOutlineContentPasteSearch } from "react-icons/md";
 import { FcMoneyTransfer } from "react-icons/fc";
+import {FaClipboardList} from "react-icons/fa";
 const { Header, Sider, Content } = Layout;
 
 const SellerMainLayout = () => {
@@ -29,7 +28,7 @@ const SellerMainLayout = () => {
         if (key === "signout") {
           navigate('/');
         } else if (key === "profile") {
-          navigate('/Content-Admin/settings/profile');
+          navigate('seller/settings/profile');
         }
       }}
       items={[
@@ -86,22 +85,16 @@ const SellerMainLayout = () => {
               label: 'Orders',
             },
             {
-              key: "Sales-Insight",
-              icon: <TbCategoryPlus className="fs-4" />,
-              label: 'Sales-Insight',
-              children: [
-                {
-                  key: "category",
-                  icon: <MdCategory className="fs-4" />,
-                  label: 'Categories',
-                },
-                {
-                  key: "subcategory",
-                  icon: <MdCategory className="fs-4" />,
-                  label: 'Sub Category',
-                },
-              ],
+              key: 'sales-insight',
+              icon: <AiOutlineBarChart className='fs-4' />,
+              label: 'Sales Insights',
             },
+            {
+              key: 'salesHistory',
+              icon: <FaClipboardList className='fs-4' />,
+              label: 'Sales History'
+            },
+            
             {
               key: "settings",
               icon: <IoSettingsSharp className="fs-4" />,
