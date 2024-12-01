@@ -73,9 +73,19 @@ const SellerMainLayout = () => {
               label: 'Product Management',
               children: [
                 {
-                  key: "ProductList",
+                  key: "productList",
                   icon: <MdOutlineControlCamera className="fs-4" />,
                   label: 'Product List',
+                },
+                {
+                  key: "Addproduct",
+                  icon: <MdOutlineControlCamera className="fs-4" />,
+                  label: 'Add product',
+                },
+                {
+                  key: "Editproduct",
+                  icon: <MdOutlineControlCamera className="fs-4" />,
+                  label: 'Edit product',
                 },
               ],
             },            
