@@ -1,39 +1,47 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const userController = require('./controller/userController');
 const bodyParser = require('body-parser');
+const connectDB = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const mainRoutes = require('./routes/roleBasedRoutes'); 
+const errorMiddleware = require('./middlewares/errorMiddleware');
+const path = require('path');
 
-const app = express();
-
-// Configure environment variables
+// Load environment variables
 dotenv.config({ path: './.env' });
 
-// Middleware setup
-app.use(express.json());
+// Initialize Express app
+const app = express();
+
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-   }).then(() => {
-    console.log('DB connected');
-  })
-  .catch((err) => console.error('DB connection error:', err));
+// Database Connection
+connectDB();
 
 // Routes
-app.post('/api/register', userController.createUser);  // Create new user
-app.post('/api/login', userController.loginUser);  // Login user
-app.get('/', (req, res) => {  // Test server
-  res.send('server is running');
+app.use('/api/auth', authRoutes); // Authentication routes
+app.use('/api/users', userRoutes); // User routes
+app.use('/api/routes', mainRoutes);
+
+// Test Route
+app.get('/', (req, res) => {
+  res.send('Server is running...');
 });
 
+// Global Error Handler
+app.use(errorMiddleware);
 
-// Start the server
-app.listen(1337, () => {
-  console.log('Server is up and running on port 1337');
+// Serve static files from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
+// Start Server
+const PORT = process.env.PORT || 1337;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-

@@ -14,45 +14,44 @@ const Login = () => {
   // Handle login form submission
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
+    console.log('Login Attempt:', { email, password }); 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-      const result = await response.json();
+    const result = await response.json();
+
+    console.log('Server Response:', result);
 
       if (response.status === 200) {
         localStorage.setItem('token', result.token);  // Store token in localStorage
         localStorage.setItem('role', result.role);    // Optionally store user role
 
-        // Navigate based on the user's role
-        if (result.role === 'SuperAdmin') {
+        if (result.data.role === 'SuperAdmin') {
           navigate('/admin');  // Redirect to admin dashboard
-        } else if (result.role === 'ContentAdmin') {
-          navigate('/Content-Admin');   // Redirect to user dashboard
-        } else if (result.role === 'DeliveryAdmin') {
-          navigate('/DeliveryAdmin');   // Redirect to user dashboard
-        } else if (result.role === 'seller') {
+        } else if (result.data.role === 'ContentAdmin') {
+          navigate('/Content-Admin');   // Redirect to content admin dashboard
+        } else if (result.data.role === 'DeliveryAdmin') {
+          navigate('/DeliveryAdmin');   // Redirect to delivery admin dashboard
+        } else if (result.data.role === 'seller') {
           navigate('/seller');   // Redirect to seller dashboard
-        } 
-        else {
+        } else {
           navigate('/'); // Default redirect if role is undefined or unexpected
         }
-
+  
         console.log('Login successful');
       } else {
-        setError(result.msg);  // Display error message if login fails
+        setError(result.message || 'Invalid login credentials');
       }
     } catch (error) {
       setError('Login failed. Please try again.');
+      console.error('Login error:', error);
     }
   };
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-yellow-400">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">

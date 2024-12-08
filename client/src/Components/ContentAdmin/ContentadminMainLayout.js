@@ -6,7 +6,6 @@ import { Layout, Menu, Dropdown, theme } from 'antd';
 import { AiOutlineProduct } from 'react-icons/ai';
 import { IoMdNotifications } from 'react-icons/io';
 import { Outlet } from 'react-router-dom';
-import { MdCategory } from "react-icons/md";
 import { TbCategoryPlus } from "react-icons/tb";
 import { MdOutlineCampaign } from "react-icons/md";
 import { IoSettingsSharp } from "react-icons/io5";
@@ -100,21 +99,9 @@ const ContentadminMainLayout = () => {
               ],
             },
             {
-              key: "categories",
+              key: "category",
               icon: <TbCategoryPlus className="fs-4" />,
               label: 'Categories',
-              children: [
-                {
-                  key: "category",
-                  icon: <MdCategory className="fs-4" />,
-                  label: 'Categories',
-                },
-                {
-                  key: "subcategory",
-                  icon: <MdCategory className="fs-4" />,
-                  label: 'Sub Category',
-                },
-              ],
             },
             {
               key: "settings",

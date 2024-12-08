@@ -72,7 +72,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#a0d1ea;', minHeight: '100vh', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', color: '#fff' }}>
       {/* App Name Section */}
       <div className="app-header" style={{ backgroundColor: '#ffd333', padding: '10px', textAlign: 'center' }}>
         <h2 className="text-2xl "style={{ margin: 0, color: '#000' }}>Merkato Ecommerce App</h2>

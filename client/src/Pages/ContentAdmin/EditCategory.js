@@ -1,82 +1,154 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { message } from 'antd';
+import { getCategory, updateCategory } from "../../services/categoryService";
 
-const EditCategory = ({ categories, setCategories }) => {
+const EditCategory = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  const [category, setCategory] = useState(null);
-  const [newImage, setNewImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
+
+  const [category, setCategory] = useState({ name: "", image: "" });
+  const [imagePreview, setImagePreview] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const categoryToEdit = categories.find(cat => cat.id === parseInt(id));
-    if (categoryToEdit) {
-      setCategory(categoryToEdit);
-      setImagePreview(categoryToEdit.image); // Set initial preview to current image
-    }
-  }, [id, categories]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const updatedCategory = {
-      ...category,
-      name: e.target.name.value,
-      image: newImage ? imagePreview : category.image, // Use new image if provided
+    const fetchCategory = async () => {
+      try {
+        const response = await getCategory(id);
+        console.log('Category response:', response); // Debug log
+        
+        if (response.success && response.data) {
+          const categoryData = response.data;
+          setCategory({
+            name: categoryData.name,
+            image: categoryData.image
+          });
+          setImagePreview(categoryData.image);
+        } else {
+          message.error(response.message || 'Failed to fetch category details');
+        }
+      } catch (err) {
+        console.error('Error details:', err); // Debug log
+        message.error(err.message || 'Failed to fetch category details');
+      }
     };
+    fetchCategory();
+  }, [id]);
 
-    setCategories(prevCategories => 
-      prevCategories.map(cat => (cat.id === updatedCategory.id ? updatedCategory : cat))
-    );
-    navigate('/Content-Admin/category');
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setCategory((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const previewUrl = URL.createObjectURL(file); // Create a local URL for the image preview
-      setNewImage(file); // Set the selected file to state
-      setImagePreview(previewUrl); // Update the image preview
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        message.error('Image size should be less than 5MB');
+        return;
+      }
+      setCategory((prev) => ({ ...prev, image: file }));
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  if (!category) return null; // Render nothing until the category is loaded
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("name", category.name);
+      
+      // Only append image if it's a new file
+      if (category.image instanceof File) {
+        formData.append("image", category.image);
+      }
+
+      console.log('Submitting category update:', {
+        id,
+        name: category.name,
+        hasNewImage: category.image instanceof File
+      }); // Debug log
+
+      const response = await updateCategory(id, formData);
+      console.log('Update response:', response); // Debug log
+      
+      if (response.success) {
+        message.success('Category updated successfully');
+        navigate("/Content-Admin/category");
+      } else {
+        throw new Error(response.message || 'Failed to update category');
+      }
+    } catch (err) {
+      console.error('Update error details:', err); // Debug log
+      message.error(err.message || 'Failed to update category');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-2xl font-bold">Edit Category</h1>
-      <form onSubmit={handleSubmit} className="mt-4">
-        <div>
-          <label className="block mb-2">Category Name</label>
-          <input
-            type="text"
-            name="name"
-            defaultValue={category.name}
-            className="border rounded-md px-4 py-2 w-full"
-            required
-          />
-        </div>
-        <div className="mt-4">
-          <label className="block mb-2">Current Image</label>
-          <img
-            src={newImage ? imagePreview : category.image} // Display the new image if selected, else display the current image
-            alt={category.name}
-            className="w-32 h-32 object-cover mb-2"
-          />
-        </div>
-        <div className="mt-4">
-          <label className="block mb-2">Upload New Image</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="border rounded-md px-4 py-2 w-full"
-          />
-        </div>
-        <button type="submit" className="bg-orange-600 text-white px-4 py-2 rounded-3xl mt-4">
-          Update Category
-        </button>
-      </form>
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Edit Category</h1>
+
+        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6">
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Category Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={category.name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+              required
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Image
+            </label>
+            <input
+              type="file"
+              onChange={handleImageChange}
+              accept="image/*"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+            />
+            {imagePreview && (
+              <div className="mt-4">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-32 h-32 object-cover rounded-lg"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => navigate("/Content-Admin/category")}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {loading ? "Updating..." : "Update Category"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

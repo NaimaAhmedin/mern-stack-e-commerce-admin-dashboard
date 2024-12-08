@@ -10,12 +10,9 @@ import EditPromotion from '../../Pages/ContentAdmin/EditPromotion';
 import CategoryList from '../../Pages/ContentAdmin/CategoryList';
 import CreateCategory from '../../Pages/ContentAdmin/CreateCategory';
 import EditCategory from '../../Pages/ContentAdmin/EditCategory';
-import SubCategoryList from '../../Pages/ContentAdmin/SubCategoryList';
-import CreateSubCategory from '../../Pages/ContentAdmin/CreateSubCategory';
-import EditSubCategory from '../../Pages/ContentAdmin/EditSubCategory';
 import Profile from '../../Pages/ContentAdmin/Profile';
 
-  function ContentAdminRoutes({ categories, setCategories, subCategories, setSubCategories, addCategory, addSubCategory }){
+function ContentAdminRoutes({ categories, setCategories, addCategory }){
   return [
     <Route path="/Content-Admin" element={<ContentadminMainLayout />} key="ContentAdminMainLayout">
       <Route index element={<Dashboard1 />} />
@@ -28,9 +25,6 @@ import Profile from '../../Pages/ContentAdmin/Profile';
       <Route path="category" element={<CategoryList categories={categories} setCategories={setCategories} />} />
       <Route path="category/create" element={<CreateCategory addCategory={addCategory} />} />
       <Route path="category/edit/:id" element={<EditCategory categories={categories} setCategories={setCategories} />} />
-      <Route path="subcategory" element={<SubCategoryList subCategories={subCategories} categories={categories} setSubCategories={setSubCategories} />} />
-      <Route path="subcategory/create" element={<CreateSubCategory addSubCategory={addSubCategory} categories={categories} />} />
-      <Route path="subcategory/edit/:id" element={<EditSubCategory />} />
       <Route path='dashboard' element={<Dashboard1 />} />
     </Route>
   ];

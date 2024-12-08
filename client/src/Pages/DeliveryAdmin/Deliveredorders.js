@@ -4,7 +4,6 @@ import Ordereditemlist from './Ordereditemlist';
 import { MdSearch } from "react-icons/md";
 // const { Option } = Select;
 
-// Updated columns with new fields and modified stock & category filters
 const columns = (showProductDetails, showOrderDetails, showCostBreakdown, filterCategory) => [
   {
     title: "SNo",

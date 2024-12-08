@@ -1,73 +1,116 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createCategory } from '../../services/categoryService';
 
-
-const CreateCategory = ({ addCategory }) => {
+const CreateCategory = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(''); // State for image preview
+  const [imagePreview, setImagePreview] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!image) return; // Ensure an image is selected
+    if (!name || !image) {
+      setError('Category name and image are required.');
+      return;
+    }
 
-    const newCategory = {
-      id: Date.now(), // Generate a unique ID based on the current time
-      name,
-      image: URL.createObjectURL(image), // Create a local URL for the image
-    };
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('image', image);
 
-    addCategory(newCategory); // Call the function passed as a prop
-    navigate('/Content-Admin/category'); // Redirect back to the category list
+    try {
+      setLoading(true);
+      const response = await createCategory(formData);
+      if (response.success) {
+        navigate('/Content-Admin/category'); // Redirect to category list
+      } else {
+        setError(response.message || 'Failed to create category. Try again.');
+      }
+    } catch (err) {
+      console.error('Error creating category:', err);
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImage(file); // Set the selected file to state
-      setImagePreview(URL.createObjectURL(file)); // Create a local URL for preview
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-2xl font-bold">Create New Category</h1>
-      <form onSubmit={handleSubmit} className="mt-4">
-        <div>
-          <label className="block mb-2">Category Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="border rounded-md px-4 py-2 w-full"
-            required
-          />
-        </div>
-        <div className="mt-4">
-          <label className="block mb-2">Upload Image</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="border rounded-md px-4 py-2 w-full"
-            required
-          />
-        </div>
-        {imagePreview && ( // Conditionally render the image preview if available
-          <div className="mt-4">
-            <label className="block mb-2">Image Preview</label>
-            <img
-              src={imagePreview}
-              alt="Selected"
-              className="w-32 h-32 object-cover mb-2"
-            />
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Create New Category</h1>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
           </div>
         )}
-        <button type="submit" className="bg-orange-600 text-white px-4 py-2 rounded-3xl mt-4">
-          Create Category
-        </button>
-      </form>
+
+        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6">
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Category Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+              required
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Image
+            </label>
+            <input
+              type="file"
+              onChange={handleImageChange}
+              accept="image/*"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+              required
+            />
+            {imagePreview && (
+              <div className="mt-4">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="w-32 h-32 object-cover rounded-lg"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => navigate('/Content-Admin/category')}
+              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:bg-orange-300"
+            >
+              {loading ? 'Creating...' : 'Create Category'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

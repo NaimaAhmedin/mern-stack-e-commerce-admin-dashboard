@@ -1,68 +1,134 @@
-const User = require('../Models/userSchema');
-const jwt = require('jsonwebtoken');
+const User = require('../models/userSchema');
 
-// Utility to sign JWT token
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+// Get User Profile
+exports.getUserProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
 };
 
-// Create user
-exports.createUser = async (req, res) => {
-    const { username, role, email, password, confirmPassword } = req.body;
-  
-    try {
-      const newUser = await User.create({
-        username,
-        role,
-        email,
-        password,
-        confirmPassword,
-      });
-  
-      const token = signToken(newUser._id);
-  
-      return res.status(201).json({
-        status: 'success',
-        token,
-        data: { id: newUser._id, username: newUser.username, role: newUser.role },    });
-    } catch (err) {
-      res.status(404).json({
-        status: 'Error',
-        msg: err.message,
-      });
-    }
-  };
-
-// Login user
-exports.loginUser = async (req, res) => {
-  const { email, password } = req.body;
+// Update User Profile
+exports.updateUserProfile = async (req, res, next) => {
+  const { username, email, password } = req.body;
 
   try {
-    if (!email || !password) {
-      return res.status(404).json({
-        msg: 'Enter Email and Password',
-      });
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const user = await User.findOne({ email }).select('+password'); // Include password explicitly
+    // Update fields if provided
+    if (username) user.username = username;
+    if (email) user.email = email;
+    if (password) user.password = password;
 
-    if (!user || !(await user.correctPassword(password, user.password))) {
-      return res.status(401).json({
-        msg: 'Incorrect email or password',
-      });
-    }
-
-    const token = signToken(user._id);
+    await user.save();
 
     res.status(200).json({
-      status: 'Success',
-      token,
-      role: user.role, // Include role in response
+      success: true,
+      data: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+      },
     });
-  } catch (err) {
-    res.status(404).json({
-      status: 'error',
-      msg: err.message,
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete User Account
+exports.deleteUserAccount = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await user.remove();
+
+    res.status(200).json({ success: true, message: 'Account deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get All Users (Admin Only)
+exports.getAllUsers = async (req, res, next) => {
+  try {
+    const users = await User.find().select('-password');
+    res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get Single User (Admin Only)
+exports.getUserById = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin Update User (Admin Only)
+exports.updateUserByAdmin = async (req, res, next) => {
+  const { username, email, role } = req.body;
+
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update fields if provided
+    if (username) user.username = username;
+    if (email) user.email = email;
+    if (role) user.role = role;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin Delete User (Admin Only)
+exports.deleteUserByAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await user.remove();
+
+    res.status(200).json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    next(error);
   }
 };

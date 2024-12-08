@@ -82,11 +82,6 @@ const SellerMainLayout = () => {
                   icon: <MdOutlineControlCamera className="fs-4" />,
                   label: 'Add product',
                 },
-                {
-                  key: "Editproduct",
-                  icon: <MdOutlineControlCamera className="fs-4" />,
-                  label: 'Edit product',
-                },
               ],
             },            
             {
