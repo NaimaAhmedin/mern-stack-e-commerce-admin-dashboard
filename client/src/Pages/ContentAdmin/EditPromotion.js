@@ -1,97 +1,200 @@
-import React, { useEffect } from 'react';
-import { Form, Input, DatePicker, Button, message } from 'antd';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { 
+  Form, 
+  DatePicker, 
+  Button, 
+  Upload, 
+  message, 
+  Modal 
+} from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
 import moment from 'moment';
+import { useNavigate, useParams } from 'react-router-dom';
+
+const { RangePicker } = DatePicker;
 
 const EditPromotion = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Retrieve the promotion data passed from the previous page
-  const promotion = location.state;
-
-  // Create the form instance
   const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [promotion, setPromotion] = useState(null);
+  const navigate = useNavigate();
+  const { id } = useParams();
 
+  // Fetch promotion details
   useEffect(() => {
-    if (promotion) {
-      // Log the promotion data to ensure it's being received
-      console.log('Promotion data received:', promotion);
+    const fetchPromotion = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`/api/promotions/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const promotionData = response.data.data;
+        setPromotion(promotionData);
 
-      // Set the form fields with the promotion data
-      form.setFieldsValue({
-        name: promotion.name,
-        description: promotion.description,
-        startDate: moment(promotion.startDate), // Convert to moment for DatePicker
-        endDate: moment(promotion.endDate),     // Convert to moment for DatePicker
-      });
-    } else {
-      message.error('No promotion data found!');
-    }
-  }, [promotion, form]); // Include form in dependencies
+        // Set initial form values
+        form.setFieldsValue({
+          dateRange: [
+            moment(promotionData.startDate, 'YYYY-MM-DD'),
+            moment(promotionData.endDate, 'YYYY-MM-DD')
+          ]
+        });
 
-  const handleFinish = async (values) => {
-    // Here you would typically make an API call to save the updated promotion
-    console.log('Updated Promotion Data:', {
-      ...values,
-      startDate: values.startDate.format('YYYY-MM-DD'), // Format date for API
-      endDate: values.endDate.format('YYYY-MM-DD'),     // Format date for API
+        // Set initial image
+        if (promotionData.image) {
+          setFileList([{
+            uid: '-1',
+            name: 'existing-image',
+            status: 'done',
+            url: promotionData.image
+          }]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch promotion:', error);
+        message.error('Failed to fetch promotion details');
+      }
+    };
+
+    fetchPromotion();
+  }, [id, form]);
+
+  // Handle file upload
+  const handleFileChange = ({ fileList }) => {
+    setFileList(fileList);
+  };
+
+  // Convert file to base64
+  const getBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
     });
-    
-    // Show a success message
-    message.success('Promotion updated successfully!');
-    
-    // Navigate back to the promotions list after saving
-    navigate('/Content-Admin/promotion');
+  };
+
+  // Submit form
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      // Get token from local storage
+      const token = localStorage.getItem('token');
+
+      // Convert image to base64 if a new image is uploaded
+      let imageBase64 = promotion.image;
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        imageBase64 = await getBase64(fileList[0].originFileObj);
+      } else if (fileList.length === 0) {
+        imageBase64 = null;
+      }
+
+      // Prepare promotion data
+      const promotionData = {
+        image: imageBase64,
+        startDate: values.dateRange[0].toISOString(),
+        endDate: values.dateRange[1].toISOString()
+      };
+
+      // Send API request
+      await axios.put(`/api/promotions/${id}`, promotionData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Success handling
+      message.success('Promotion updated successfully');
+      navigate('/Content-Admin/Promotion');
+    } catch (error) {
+      console.error('Promotion Update Error:', error);
+      message.error(error.response?.data?.message || 'Failed to update promotion');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleModalOk = () => {
+    setIsModalVisible(false);
+    navigate('/Content-Admin/Promotion');
   };
 
   return (
-    <div style={{ padding: '24px', background: '#fff', borderRadius: '8px' }}>
-      <h2 className="text-2xl font-bold mb-4">Edit Promotion</h2>
+    <div className="p-6 max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Edit Promotion</h1>
+      
       <Form
-        form={form} // Pass the form instance
+        form={form}
         layout="vertical"
-        onFinish={handleFinish}
-        style={{ maxWidth: 600 }}
+        onFinish={onFinish}
       >
         <Form.Item
-          label="Promotion Name"
-          name="name"
-          rules={[{ required: true, message: 'Please input the promotion name!' }]}
+          name="image"
+          label="Promotion Image"
+          rules={[
+            {
+              validator: async (_, value) => {
+                // Only validate if no existing image and no new image is uploaded
+                if (!promotion?.image && (!fileList || fileList.length === 0)) {
+                  throw new Error('Please upload an image');
+                }
+              }
+            }
+          ]}
         >
-          <Input placeholder="Enter promotion name" />
+          <Upload
+            listType="picture"
+            fileList={fileList}
+            onChange={handleFileChange}
+            beforeUpload={() => false} // Prevent auto upload
+            accept="image/*"
+            maxCount={1}
+          >
+            <Button icon={<UploadOutlined />}>
+              Click to Upload
+            </Button>
+          </Upload>
         </Form.Item>
 
         <Form.Item
-          label="Description"
-          name="description"
-          rules={[{ required: true, message: 'Please input the description!' }]}
+          name="dateRange"
+          label="Promotion Duration"
+          rules={[{ required: true, message: 'Please select promotion dates' }]}
         >
-          <Input.TextArea placeholder="Enter description" rows={4} />
-        </Form.Item>
-
-        <Form.Item
-          label="Start Date"
-          name="startDate"
-          rules={[{ required: true, message: 'Please select the start date!' }]}
-        >
-          <DatePicker format="YYYY-MM-DD" />
-        </Form.Item>
-
-        <Form.Item
-          label="End Date"
-          name="endDate"
-          rules={[{ required: true, message: 'Please select the end date!' }]}
-        >
-          <DatePicker format="YYYY-MM-DD" />
+          <RangePicker 
+            disabledDate={(current) => {
+              // Disable dates before today
+              return current && current < moment().startOf('day');
+            }}
+            allowClear={true}
+            showTime={false}
+            format="YYYY-MM-DD"
+          />
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" className="bg-orange-600 text-white rounded-full px-4 py-2">
+          <Button 
+            type="primary" 
+            htmlType="submit" 
+            loading={loading}
+          >
             Update Promotion
           </Button>
         </Form.Item>
       </Form>
+
+      <Modal
+        title="Promotion Updated"
+        visible={isModalVisible}
+        onOk={handleModalOk}
+        onCancel={handleModalOk}
+      >
+        <p>Your promotion has been successfully updated.</p>
+      </Modal>
     </div>
   );
 };

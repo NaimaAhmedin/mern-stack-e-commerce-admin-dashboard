@@ -4,17 +4,10 @@ import {
 
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { MdDashboard } from "react-icons/md";
-import { TiShoppingCart } from "react-icons/ti";
 import {  Layout, Menu, theme } from 'antd';
-import { FaUser } from "react-icons/fa";
-import { AiOutlineProduct } from "react-icons/ai";
-import { FaProductHunt,FaBloggerB } from "react-icons/fa6";
-import { TbBrandBeats } from "react-icons/tb";
-import { BiCategoryAlt } from "react-icons/bi";
-import { IoIosColorPalette, IoMdNotifications } from "react-icons/io";
-import { FaClipboardList } from "react-icons/fa";
-import { ImBlog } from "react-icons/im";
+import { AiOutlineDashboard } from "react-icons/ai";
+import { IoMdNotifications } from "react-icons/io";
+import { FaUsersCog,FaUsers,FaUserPlus,FaChartLine,FaUserCircle } from "react-icons/fa";
 import{Outlet} from "react-router-dom"
 const { Header, Sider, Content } = Layout;
 const MainLayout = () => {
@@ -41,98 +34,55 @@ const MainLayout = () => {
           }}
           items={[
             {
-              key: "",
-              icon: <MdDashboard className="fs-4"/>,
+              key: '',
+              icon: <AiOutlineDashboard className='fs-4' />,
               label: 'Dashboard',
             },
             {
-                key: "Customer",
-                icon: <FaUser className="fs-4"/>,
-                label: 'Customer',
-              },
-              {
-                key: "Catalog",
-                icon: <AiOutlineProduct className="fs-4"/>,
-                label: 'Catalog',
-                children:[{
-                    key: "Product",
-                    icon: <TiShoppingCart className="fs-4"/>,
-                    label: ' Add product',
+              key: 'ManageAdmin',
+              icon: <FaUsersCog className='fs-4' />, // Icon for managing admins
+              label: 'Manage Admin',
+              children: [
+                
+                {
+                  key: 'AdminList',
+                  icon: <FaUserCircle className='fs-4' />,  // Icon for user profile or admin
+                  label: 'Admin List',
                 },
                 {
-                    key: " Product-list",
-                    icon: <FaProductHunt className="fs-4"/>,
-                    label: 'product-list',
+                  key: 'AddAdmin',
+                  icon: <FaUserPlus className='fs-4' />, // Icon for adding a user
+                  label: 'Add Admin',
+                },
+              ],
+            },
+            {
+              key: 'ManageUsers',
+              icon: <FaUsers className='fs-4' />, // Icon for managing groups of people
+              label: 'Manage Users',
+              children: [
+                {
+                  key: 'ViewAllUsers',
+                  icon: <FaUserCircle className='fs-4' />,  // Icon for user profile or admin
+                  label: 'View All Users',
                 },
                 {
-                    key: "Brand",
-                    icon: <TbBrandBeats className="fs-4"/>,
-                    label: 'Brand',
+                  key: 'Sellers',
+                  icon: <FaUserPlus className='fs-4' />, // Icon for adding a user
+                  label: 'Seller',
                 },
                 {
-                    key: "List-Brand",
-                    icon: <TbBrandBeats className="fs-4"/>,
-                    label: 'Brand list',
+                  key: 'Customer',
+                  icon: <FaUserPlus className='fs-4' />, // Icon for adding a user
+                  label: 'Customers',
                 },
-                {
-                    key: "Category",
-                    icon: <BiCategoryAlt className="fs-4"/>,
-                    label: 'Category',
-                },
-                {
-                    key: "List-Category",
-                    icon: <BiCategoryAlt className="fs-4"/>,
-                    label: 'category list',
-                },
-                {
-                    key: "Color",
-                    icon: <IoIosColorPalette className="fs-4"/>,
-                    label: 'Color',
-                },
-                {
-                    key: "List-Color",
-                    icon: <IoIosColorPalette className="fs-4"/>,
-                    label: 'Color list',
-                },
-            ]
-              },
-              {
-                key: "Order",
-                icon: <FaClipboardList className="fs-4"/>,
-                label: 'Order',
+              ],
             },
            
             {
-                key: "blogs",
-                icon: <FaBloggerB className="fs-4"/>,
-                label: 'Blogs',
-                children:[
-                    {
-                        key: "blog",
-                        icon: <ImBlog className="fs-4"/>,
-                        label: 'Add blog',
-                    },
-                    {
-                        key: "List-blog",
-                        icon: <FaClipboardList className="fs-4"/>,
-                        label: 'Blog List',
-                    },
-                    {
-                        key: "blog-category",
-                        icon: <ImBlog className="fs-4"/>,
-                        label: 'Add Blog Category',
-                    },
-                    {
-                        key: "blog-category-list",
-                        icon: <FaClipboardList className="fs-4"/>,
-                        label: 'Blog Category List',
-                    },
-                ]
-            },
-            {
-                key: "enquiries",
-                icon: <FaClipboardList className="fs-4"/>,
-                label: 'Enquiries',
+              key: 'ReportsConfig',
+              icon: <FaChartLine className='fs-4' />, // Icon for reports and statistics
+              label: 'Reports & Config',
             },
             
           ]}

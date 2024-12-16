@@ -1,144 +1,131 @@
-import React, { useState } from 'react';
-import { Table, Button, Modal, message } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { MdSearch } from "react-icons/md";
+import axios from 'axios';
 
 const Promotions = () => {
-  // Dummy data for promotions
-  const initialPromotions = [
-    {
-      key: '1',
-      name: 'New Year Discount',
-      description: 'Get 30% off on all products during the New Year.',
-      startDate: '2024-01-01',
-      endDate: '2024-01-10',
-    },
-    {
-      key: '2',
-      name: 'Spring Clearance',
-      description: 'Up to 50% off on selected items.',
-      startDate: '2024-03-01',
-      endDate: '2024-03-15',
-    },
-    {
-      key: '3',
-      name: 'Holiday Special',
-      description: 'Exclusive holiday discounts for loyal customers.',
-      startDate: '2024-12-01',
-      endDate: '2024-12-25',
-    },
-  ];
-
-  const [promotions, setPromotions] = useState(initialPromotions);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPromotions, setSelectedPromotions] = useState([]);
+  const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const filteredPromotions = promotions.filter(promotion =>
-    promotion.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
- 
-
-  const handleViewDetails = (promotion) => {
-    Modal.info({
-      title: `Promotion Details: ${promotion.name}`,
-      content: (
-        <div>
-          <p>Description: {promotion.description}</p>
-          <p>Start Date: {promotion.startDate}</p>
-          <p>End Date: {promotion.endDate}</p>
-        </div>
-      ),
-      onOk() {},
-    });
+  // Fetch Promotions
+  const fetchPromotions = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/promotions', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setPromotions(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch promotions:', error);
+      message.error('Failed to fetch promotions');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleSelectPromotion = (key) => {
-    setSelectedPromotions(prev =>
-      prev.includes(key) ? prev.filter(promotionKey => promotionKey !== key) : [...prev, key]
-    );
+  // Delete Promotion
+  const handleDelete = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/promotions/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      message.success('Promotion deleted successfully');
+      fetchPromotions();
+    } catch (error) {
+      console.error('Failed to delete promotion:', error);
+      message.error('Failed to delete promotion');
+    }
   };
 
-  const handleDeleteSelected = () => {
-    setPromotions(promotions.filter(promotion => !selectedPromotions.includes(promotion.key)));
-    setSelectedPromotions([]);
-    message.success('Selected promotions deleted successfully!');
+  // Edit Promotion
+  const handleEdit = (record) => {
+    navigate(`/Content-Admin/promotion/edit/${record._id}`);
   };
+
+  // Columns for Promotions Table
+  const columns = [
+    {
+      title: 'Image',
+      dataIndex: 'image',
+      key: 'image',
+      render: (image) => (
+        <img 
+          src={image} 
+          alt="Promotion" 
+          style={{ width: 100, height: 50, objectFit: 'cover' }} 
+        />
+      )
+    },
+    {
+      title: 'Start Date',
+      dataIndex: 'startDate',
+      key: 'startDate',
+      render: (date) => new Date(date).toLocaleDateString()
+    },
+    {
+      title: 'End Date',
+      dataIndex: 'endDate',
+      key: 'endDate',
+      render: (date) => new Date(date).toLocaleDateString()
+    },
+    {
+      title: 'Status',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (isActive) => (
+        <span>
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
+      )
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <span>
+          <button 
+            onClick={() => handleEdit(record)}
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => handleDelete(record._id)}
+          >
+            Delete
+          </button>
+        </span>
+      )
+    }
+  ];
+
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-4xl font-bold">Promotions</h2>
-        
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-full pl-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <MdSearch className="absolute right-2 top-2 text-gray-500" size={20} />
-          </div>
-          <button
-            onClick={() => navigate('/Content-Admin/promotion/create')}
-            className="bg-orange-600 text-white px-4 py-2 rounded-3xl"
-          >
-            + Create
-          </button>
-          {selectedPromotions.length > 0 && (
-            <button
-              onClick={handleDeleteSelected}
-              className="bg-orange-600 text-white px-4 py-2 rounded-3xl"
-            >
-              Delete
-            </button>
-)}
-
-          
-        </div>
+        <h1 className="text-2xl font-bold">Promotions</h1>
+        <button 
+          onClick={() => navigate('/Content-Admin/promotion/create')}
+        >
+          Create Promotion
+        </button>
       </div>
 
-      <Table dataSource={filteredPromotions} pagination={false} rowKey="key">
-        <Table.Column
-          title="Select"
-          key="select"
-          render={(text, record) => (
-            <input
-              type="checkbox"
-              checked={selectedPromotions.includes(record.key)}
-              onChange={() => toggleSelectPromotion(record.key)}
-            />
-          )}
-        />
-        <Table.Column 
-          title={<span className="font-semibold text-lg">Name</span>} 
-          dataIndex="name" 
-          key="name" 
-          render={(text) => <span className="font-semibold">{text}</span>} 
-        />
-        <Table.Column title="Description" dataIndex="description" key="description" />
-        <Table.Column title="Start Date" dataIndex="startDate" key="startDate" />
-        <Table.Column title="End Date" dataIndex="endDate" key="endDate" />
-        <Table.Column
-          title="Action"
-          key="action"
-          render={(text, record) => (
-            <span>
-              <Button type="link" onClick={() => handleViewDetails(record)}>
-                View
-              </Button>
-              <Button 
-                type="link" 
-                onClick={() => navigate(`/Content-Admin/promotion/edit/${record.key}`, { state: record })}>
-                Edit
-              </Button>
-            </span>
-          )}
-        />
-      </Table>
+      <Table 
+        columns={columns} 
+        dataSource={promotions} 
+        loading={loading}
+        rowKey="_id"
+      />
     </div>
   );
 };

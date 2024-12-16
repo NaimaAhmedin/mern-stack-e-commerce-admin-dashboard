@@ -1,61 +1,127 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { 
+  Form, 
+  DatePicker, 
+  Button, 
+  Upload, 
+  message, 
+} from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
+import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, DatePicker, Button, message } from 'antd';
 
-const CreatePromotion = ({ setPromotions }) => {
-  const navigate = useNavigate();
+const { RangePicker } = DatePicker;
+
+const CreatePromotion = () => {
   const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const onFinish = (values) => {
-    const newPromotion = {
-      key: `${Date.now()}`, // Unique key based on timestamp
-      name: values.name,
-      description: values.description,
-      startDate: values.startDate.format('YYYY-MM-DD'),
-      endDate: values.endDate.format('YYYY-MM-DD'),
-    };
+  // Handle file upload
+  const handleFileChange = ({ fileList }) => {
+    setFileList(fileList);
+  };
 
-    // Update the promotions list in PromotionManager
-    setPromotions((prevPromotions) => [...prevPromotions, newPromotion]);
-    
-    message.success('Promotion created successfully!');
-    navigate('/Content-Admin/promotions'); // Redirect to promotions list
+  // Convert file to base64
+  const getBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Submit form
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      // Get token from local storage
+      const token = localStorage.getItem('token');
+      console.log('Token:', token);  // Log the token for debugging
+
+      // Convert image to base64
+      const imageBase64 = await getBase64(fileList[0].originFileObj);
+
+      // Prepare promotion data
+      const promotionData = {
+        image: imageBase64,
+        startDate: values.dateRange[0].toISOString(),
+        endDate: values.dateRange[1].toISOString()
+      };
+
+      console.log('Promotion Data:', promotionData);  // Log the promotion data
+
+      // Send API request with Authorization header
+      const response = await axios.post('/api/promotions', promotionData, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Success handling
+      message.success('Promotion created successfully!', 1, () => {
+        navigate('/Content-Admin/Promotion');
+      });
+    } catch (error) {
+      console.error('Promotion Creation Error:', error);
+      console.error('Error Response:', error.response);  // Log full error response
+      message.error(error.response?.data?.message || 'Failed to create promotion');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="p-4 bg-gray-100 min-h-screen">
-      <h2 className="text-2xl font-bold mb-4">Create New Promotion</h2>
-      <Form form={form} layout="vertical" onFinish={onFinish}>
+    <div className="p-6 max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Create New Promotion</h1>
+      
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+      >
         <Form.Item
-          label="Promotion Name"
-          name="name"
-          rules={[{ required: true, message: 'Please enter promotion name!' }]}
+          name="image"
+          label="Promotion Image"
+          rules={[{ required: true, message: 'Please upload an image' }]}
         >
-          <Input placeholder="Enter promotion name" />
+          <Upload
+            listType="picture"
+            fileList={fileList}
+            onChange={handleFileChange}
+            beforeUpload={() => false} // Prevent auto upload
+            accept="image/*"
+            maxCount={1}
+          >
+            <Button icon={<UploadOutlined />}>
+              Click to Upload
+            </Button>
+          </Upload>
         </Form.Item>
+
         <Form.Item
-          label="Description"
-          name="description"
-          rules={[{ required: true, message: 'Please enter description!' }]}
+          name="dateRange"
+          label="Promotion Duration"
+          rules={[{ required: true, message: 'Please select promotion dates' }]}
         >
-          <Input.TextArea placeholder="Enter promotion description" />
+          <RangePicker 
+            style={{ width: '100%' }}
+            disabledDate={(current) => 
+              current && current < moment().startOf('day')
+            }
+          />
         </Form.Item>
-        <Form.Item
-          label="Start Date"
-          name="startDate"
-          rules={[{ required: true, message: 'Please select start date!' }]}
-        >
-          <DatePicker className="w-full" />
-        </Form.Item>
-        <Form.Item
-          label="End Date"
-          name="endDate"
-          rules={[{ required: true, message: 'Please select end date!' }]}
-        >
-          <DatePicker className="w-full" />
-        </Form.Item>
+
         <Form.Item>
-          <Button type="primary" htmlType="submit" className="bg-orange-600 text-white rounded-full">
+          <Button 
+            type="primary" 
+            htmlType="submit" 
+            loading={loading}
+            block
+          >
             Create Promotion
           </Button>
         </Form.Item>

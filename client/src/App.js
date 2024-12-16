@@ -1,4 +1,4 @@
-import React , { useState }from 'react';
+import React, { useState } from 'react';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from "./Pages/CommanPages/Login";
@@ -9,12 +9,11 @@ import ContentAdminRoutes from './Components/ContentAdmin/ContentAdminRoutes';
 import SuperAdminRoutes from './Components/SuperAdmin/SuperAdminRoutes';
 import DeliveryAdminRoutes from './Components/DeliveryAdmin/DeliveryAdminRoutes';
 import SellerRoutes from './Components/seller/SellerRoutes';
+import ProtectedRoute from './Components/ProtectedRoute';
+import NotAuthorized from './Pages/CommanPages/NotAuthorized';
 
 function App() {
-
-  const [categories, setCategories] = useState([
-   
-  ]);
+  const [categories, setCategories] = useState([]);
   
   const addCategory = (newCategory) => {
     setCategories((prev) => [...prev, newCategory]);
@@ -23,19 +22,29 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register/>}/>
         <Route path="/reset-password" element={<RestPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        {/* Main Admin Routes */}
-        {SuperAdminRoutes()}
+        <Route path="/unauthorized" element={<NotAuthorized />} />
 
-        {/* Content Admin Routes */}
-        {ContentAdminRoutes({ categories, setCategories, addCategory })}
-        {DeliveryAdminRoutes()} 
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute allowedRoles={['SuperAdmin']} />}>
+          {SuperAdminRoutes()}
+        </Route>
 
-        {/* seller Routes */}
-        {SellerRoutes()}          
+        <Route element={<ProtectedRoute allowedRoles={['ContentAdmin']} />}>
+          {ContentAdminRoutes({ categories, setCategories, addCategory })}
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['DeliveryAdmin']} />}>
+          {DeliveryAdminRoutes()} 
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
+          {SellerRoutes()}          
+        </Route>
       </Routes>
     </Router>
   );

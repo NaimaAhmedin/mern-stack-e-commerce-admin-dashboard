@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdModeEditOutline, MdSearch, MdExpandMore, MdExpandLess, MdAdd, MdDelete } from "react-icons/md";
-import { message } from 'antd';
+import {
+  MdModeEditOutline,
+  MdSearch,
+  MdExpandMore,
+  MdExpandLess,
+  MdAdd,
+  MdDelete,
+} from "react-icons/md";
+import { message } from "antd";
 import { getCategories, deleteCategory } from "../../services/categoryService";
-import { createSubcategory, updateSubcategory, deleteSubcategory } from "../../services/subcategoryService";
+import {
+  createSubcategory,
+  updateSubcategory,
+  deleteSubcategory,
+} from "../../services/subcategoryService";
 
 const CategoryList = () => {
   const navigate = useNavigate();
@@ -13,22 +24,26 @@ const CategoryList = () => {
   const [error, setError] = useState("");
   const [expandedCategories, setExpandedCategories] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalData, setModalData] = useState({ type: '', categoryId: null, subcategoryId: null });
+  const [modalData, setModalData] = useState({
+    type: "",
+    categoryId: null,
+    subcategoryId: null,
+  });
   const [subcategoryName, setSubcategoryName] = useState("");
 
-  // Fetch categories from the backend
+  // Fetch categories from  backend
   const fetchCategories = async () => {
     try {
       const response = await getCategories();
       if (response.success && Array.isArray(response.data)) {
         setCategories(response.data);
       } else {
-        message.error(response.message || 'Failed to load categories');
+        message.error(response.message || "Failed to load categories");
         setCategories([]); // Set empty array as fallback
       }
     } catch (err) {
-      console.error('Error loading categories:', err);
-      message.error(err.message || 'Failed to load categories');
+      console.error("Error loading categories:", err);
+      message.error(err.message || "Failed to load categories");
       setCategories([]); // Set empty array on error
     }
   };
@@ -39,14 +54,14 @@ const CategoryList = () => {
 
   // Toggle category expansion
   const toggleExpand = (categoryId) => {
-    setExpandedCategories(prev => ({
+    setExpandedCategories((prev) => ({
       ...prev,
-      [categoryId]: !prev[categoryId]
+      [categoryId]: !prev[categoryId],
     }));
   };
 
   // Filtered categories based on search input
-  const filteredCategories = Array.isArray(categories) 
+  const filteredCategories = Array.isArray(categories)
     ? categories.filter((category) =>
         category.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -92,15 +107,20 @@ const CategoryList = () => {
       await Promise.all(selectedCategories.map((id) => deleteCategory(id)));
       await fetchCategories(); // Refresh the list after deletion
       setSelectedCategories([]);
-      message.success('Categories deleted successfully');
+      message.success("Categories deleted successfully");
     } catch (err) {
-      console.error('Error deleting categories:', err);
+      console.error("Error deleting categories:", err);
       message.error(err.message || "Failed to delete categories");
     }
   };
 
   // Handle subcategory operations
-  const openModal = (type, categoryId, subcategoryId = null, initialName = '') => {
+  const openModal = (
+    type,
+    categoryId,
+    subcategoryId = null,
+    initialName = ""
+  ) => {
     setModalData({ type, categoryId, subcategoryId });
     setSubcategoryName(initialName);
     setIsModalOpen(true);
@@ -109,28 +129,37 @@ const CategoryList = () => {
   // Handle create/update subcategory
   const handleSubcategorySubmit = async (e) => {
     e.preventDefault();
-  
+
     const subcategoryData = {
       name: subcategoryName,
       categoryId: modalData.categoryId,
     };
-  
+
     try {
       let response;
-      if (modalData.type === 'create') {
+      if (modalData.type === "create") {
         response = await createSubcategory(subcategoryData);
-      } else if (modalData.type === 'edit') {
-        response = await updateSubcategory(modalData.subcategoryId, subcategoryData);
+      } else if (modalData.type === "edit") {
+        response = await updateSubcategory(
+          modalData.subcategoryId,
+          subcategoryData
+        );
       }
 
       if (response.success) {
-        message.success(`Subcategory ${modalData.type === 'create' ? 'created' : 'updated'} successfully`);
+        message.success(
+          `Subcategory ${
+            modalData.type === "create" ? "created" : "updated"
+          } successfully`
+        );
         await fetchCategories(); // Refresh the categories list
         setIsModalOpen(false);
-        setSubcategoryName('');
-        setModalData({ type: '', categoryId: null, subcategoryId: null });
+        setSubcategoryName("");
+        setModalData({ type: "", categoryId: null, subcategoryId: null });
       } else {
-        throw new Error(response.message || `Failed to ${modalData.type} subcategory`);
+        throw new Error(
+          response.message || `Failed to ${modalData.type} subcategory`
+        );
       }
     } catch (err) {
       console.error(`Error ${modalData.type}ing subcategory:`, err);
@@ -139,20 +168,22 @@ const CategoryList = () => {
   };
 
   const handleDeleteSubcategory = async (categoryId, subcategoryId) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this subcategory?");
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this subcategory?"
+    );
     if (!confirmDelete) return;
 
     try {
       const response = await deleteSubcategory(subcategoryId);
       if (response.success) {
-        message.success('Subcategory deleted successfully');
+        message.success("Subcategory deleted successfully");
         await fetchCategories(); // Refresh the categories list
       } else {
-        throw new Error(response.message || 'Failed to delete subcategory');
+        throw new Error(response.message || "Failed to delete subcategory");
       }
     } catch (err) {
-      console.error('Error deleting subcategory:', err);
-      message.error(err.message || 'Failed to delete subcategory');
+      console.error("Error deleting subcategory:", err);
+      message.error(err.message || "Failed to delete subcategory");
     }
   };
 
@@ -170,7 +201,10 @@ const CategoryList = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="px-4 py-2 border rounded-3xl pl-10"
             />
-            <MdSearch className="absolute right-2 top-2 text-gray-500" size={20} />
+            <MdSearch
+              className="absolute right-2 top-2 text-gray-500"
+              size={20}
+            />
           </div>
 
           <button
@@ -196,7 +230,11 @@ const CategoryList = () => {
           <thead>
             <tr className="bg-gray-200">
               <th className="p-4">
-                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                />
               </th>
               <th className="p-4">Image</th>
               <th className="p-4">Name</th>
@@ -228,7 +266,11 @@ const CategoryList = () => {
                         onClick={() => toggleExpand(category._id)}
                         className="ml-2 text-gray-500"
                       >
-                        {expandedCategories[category._id] ? <MdExpandLess size={20} /> : <MdExpandMore size={20} />}
+                        {expandedCategories[category._id] ? (
+                          <MdExpandLess size={20} />
+                        ) : (
+                          <MdExpandMore size={20} />
+                        )}
                       </button>
                     </div>
                   </td>
@@ -241,7 +283,7 @@ const CategoryList = () => {
                         <MdModeEditOutline size={20} />
                       </button>
                       <button
-                        onClick={() => openModal('create', category._id)}
+                        onClick={() => openModal("create", category._id)}
                         className="text-green-500 hover:text-green-600"
                       >
                         <MdAdd size={20} />
@@ -259,17 +301,32 @@ const CategoryList = () => {
                         ) : (
                           <div className="space-y-2">
                             {category.subcategories.map((sub) => (
-                              <div key={sub._id} className="flex items-center justify-between py-1">
+                              <div
+                                key={sub._id}
+                                className="flex items-center justify-between py-1"
+                              >
                                 <span>{sub.name}</span>
                                 <div className="flex gap-2">
                                   <button
-                                    onClick={() => openModal('edit', category._id, sub._id, sub.name)}
+                                    onClick={() =>
+                                      openModal(
+                                        "edit",
+                                        category._id,
+                                        sub._id,
+                                        sub.name
+                                      )
+                                    }
                                     className="text-orange-500 hover:text-orange-600"
                                   >
                                     <MdModeEditOutline size={18} />
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteSubcategory(category._id, sub._id)}
+                                    onClick={() =>
+                                      handleDeleteSubcategory(
+                                        category._id,
+                                        sub._id
+                                      )
+                                    }
                                     className="text-red-500 hover:text-red-600"
                                   >
                                     <MdDelete size={18} />
@@ -294,7 +351,9 @@ const CategoryList = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg w-96">
             <h2 className="text-xl font-bold mb-4">
-              {modalData.type === 'create' ? 'Create Subcategory' : 'Edit Subcategory'}
+              {modalData.type === "create"
+                ? "Create Subcategory"
+                : "Edit Subcategory"}
             </h2>
             <form onSubmit={handleSubcategorySubmit}>
               <input
