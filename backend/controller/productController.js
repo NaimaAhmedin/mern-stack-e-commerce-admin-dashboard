@@ -1,14 +1,39 @@
 const Product = require('../Models/productModel');
 
 // Get all products
+// exports.getAllProducts = async (req, res) => {
+//   try {
+//     const products = await Product.find()
+//       .populate('categoryId', 'name')
+//       .populate('subcategoryId', 'name');
+//     res.status(200).json(products);
+//   } catch (error) {
+//     res.status(500).json({ message: 'Error fetching products', error });
+//   }
+// };
+
 exports.getAllProducts = async (req, res) => {
   try {
+    console.log('Getting all products, user:', req.user); // Debug user auth
+
     const products = await Product.find()
       .populate('categoryId', 'name')
       .populate('subcategoryId', 'name');
-    res.status(200).json(products);
+
+    console.log('Found products:', products); // Debug found products
+
+    res.status(200).json({
+      success: true,
+      data: products,
+      message: 'Products fetched successfully'
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching products', error });
+    console.error('Error in getAllProducts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching products',
+      error: error.message
+    });
   }
 };
 
@@ -28,33 +53,46 @@ exports.getProductById = async (req, res) => {
 // Create a new product
 exports.createProduct = async (req, res) => {
   try {
-    const { name, categoryId, subcategoryId, price, amount, description, image } = req.body;
+    // Handle image files
+    const images = req.files.map(file => file.filename);
+    
+    const productData = {
+      name: req.body.name,
+      description: req.body.description,
+      price: req.body.price,
+      amount: req.body.stock, // map stock to amount
+      categoryId: req.body.category, // map category to categoryId
+      subcategoryId: req.body.subcategory, // map subcategory to subcategoryId
+      brand: req.body.brand,
+      color: req.body.color,
+      warranty: req.body.warranty,
+      image: images[0] // use the first image
+    };
 
-    const newProduct = new Product({
-      name,
-      categoryId,
-      subcategoryId,
-      price,
-      amount,
-      description,
-      image,
-    });
-
+    const newProduct = new Product(productData);
     await newProduct.save();
-    res.status(201).json(newProduct);
+    res.status(201).json({
+      success: true,
+      data: newProduct
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating product', error });
+    console.error('Product creation error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error creating product',
+      error: error.message 
+    });
   }
 };
 
 // Update a product
 exports.updateProduct = async (req, res) => {
   try {
-    const { name, categoryId, subcategoryId, price, amount, description, image } = req.body;
+    const { name, categoryId, subcategoryId, brand, color, price, amount, warranty, description, image } = req.body;
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, categoryId, subcategoryId, price, amount, description, image },
+      { name, categoryId, subcategoryId, brand, color, price, amount, warranty, description, image },
       { new: true }
     );
 

@@ -13,10 +13,17 @@ import ProtectedRoute from './Components/ProtectedRoute';
 import NotAuthorized from './Pages/CommanPages/NotAuthorized';
 
 function App() {
+
   const [categories, setCategories] = useState([]);
   
   const addCategory = (newCategory) => {
     setCategories((prev) => [...prev, newCategory]);
+  };
+
+  const [products, setProducts] = useState([]);
+  
+  const addProduct = (newProduct) => {
+    setProducts((prev) => [...prev, newProduct]);
   };
 
   return (
@@ -42,9 +49,13 @@ function App() {
           {DeliveryAdminRoutes()} 
         </Route>
 
+
+        {/* seller Routes */}
+ 
         <Route element={<ProtectedRoute allowedRoles={['seller']} />}>
-          {SellerRoutes()}          
+              {SellerRoutes({ products, setProducts, addProduct })}           
         </Route>
+
       </Routes>
     </Router>
   );
