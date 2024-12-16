@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const productController = require('../controller/productController');
 const roleMiddleware = require('../middlewares/roleMiddleware');
-
+const { protect, restrictTo } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 // Ensure uploads directory exists
@@ -24,10 +24,26 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Product Routes
-router.get('/', productController.getAllProducts);
-router.get('/:id', productController.getProductById);
-router.post('/', roleMiddleware(['Seller']), upload.array('images', 5), productController.createProduct); // Allow multiple images
-router.put('/:id', roleMiddleware(['Seller', 'ContentAdmin']), productController.updateProduct);
-router.delete('/:id', roleMiddleware(['ContentAdmin']), productController.deleteProduct);
+router.get('/', protect, productController.getAllProducts);
+router.get('/:id', protect, productController.getProductById);
+router.post(
+  '/',
+  protect,
+  restrictTo('seller', 'admin'),
+  upload.array('image', 5),
+  productController.createProduct 
+);
+router.put(
+  '/:id', 
+  protect, 
+  restrictTo('seller', 'admin'),
+  productController.updateProduct
+);
+router.delete(
+  '/:id', 
+  protect, 
+  restrictTo('seller','admin'),
+  productController.deleteProduct
+);
 
-module.exports = router;
+module.exports = router;  

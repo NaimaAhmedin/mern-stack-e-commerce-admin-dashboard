@@ -9,7 +9,8 @@ import OrderManagement from '../../Pages/Seller/OrderManagementPage';
 import Productlist from '../../Pages/Seller/Productlist';
 import Editproduct from '../../Pages/Seller/Editproduct';
 import Addproduct from '../../Pages/Seller/Addproduct';
-const SellerRoutes = () => {
+
+function SellerRoutes({ products, setProducts, addProduct }){
   return [
     <Route path="/seller" element={<SellerMainLayout />} key="SellerMainLayout">
       <Route index element={<Dashboard />} />
@@ -20,9 +21,9 @@ const SellerRoutes = () => {
       <Route path="salesHistory" element={<SalesHistory />} />
       <Route path="settings/profile" element={<Profile />} />
       
-      <Route path="ProductList" element ={<Productlist/> }/>
-      <Route path="/seller/ProductList/product/edit/:id" element={<Editproduct/>  }/>
-      <Route path="ProductList/add" element={<Addproduct/> }/>
+      <Route path="ProductList" element ={<Productlist products={products} setProducts={setProducts}/> }/>
+      <Route path="/seller/ProductList/product/edit/:id" element={<Editproduct products={products} setProducts={setProducts} />  }/>
+      <Route path="ProductList/add" element={<Addproduct addProduct={addProduct}/> }/>
     </Route>
     ];
 }

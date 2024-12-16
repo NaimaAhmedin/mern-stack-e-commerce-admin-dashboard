@@ -12,12 +12,16 @@ import SellerRoutes from './Components/seller/SellerRoutes';
 
 function App() {
 
-  const [categories, setCategories] = useState([
-   
-  ]);
+  const [categories, setCategories] = useState([]);
   
   const addCategory = (newCategory) => {
     setCategories((prev) => [...prev, newCategory]);
+  };
+
+  const [products, setProducts] = useState([]);
+  
+  const addProduct = (newProduct) => {
+    setProducts((prev) => [...prev, newProduct]);
   };
 
   return (
@@ -35,7 +39,7 @@ function App() {
         {DeliveryAdminRoutes()} 
 
         {/* seller Routes */}
-        {SellerRoutes()}          
+        {SellerRoutes({ products, setProducts, addProduct })}          
       </Routes>
     </Router>
   );

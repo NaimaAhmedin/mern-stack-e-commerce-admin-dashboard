@@ -1,141 +1,329 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form, Input, Button, message, Select, Upload } from 'antd';
-import { InboxOutlined } from '@ant-design/icons';
+import { createProduct } from '../../services/productService';
+import { getCategories } from '../../services/categoryService';
+import { message } from 'antd';
 
-const { Dragger } = Upload;
-const props = {
-  name: 'file',
-  multiple: true,
-  action: 'https://660d2bd96ddfa2943b33731c.mockapi.io/api/upload',
-  onChange(info) {
-    const { status } = info.file;
-    if (status !== 'uploading') {
-      console.log(info.file, info.fileList);
-    }
-    if (status === 'done') {
-      message.success(`${info.file.name} file uploaded successfully.`);
-    } else if (status === 'error') {
-      message.error(`${info.file.name} file upload failed.`);
-    }
-  },
-  onDrop(e) {
-    console.log('Dropped files', e.dataTransfer.files);
-  },
-};
-const { Option } = Select;
-
-const Addproduct = ({ setProducts }) => {
+const AddProduct = () => {
   const navigate = useNavigate();
-  const [form] = Form.useForm();
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    stock: '',
+    category: '',
+    subcategory: '',
+    brand: '',
+    color: '',
+    warranty: ''
+  });
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const onFinish = (values) => {
-    const newProduct = {
-      key: `${Date.now()}`, // Unique key based on timestamp
-      name: values.name,
-      category: values.category,
-      brand: values.brand,
-      color: values.color,
-      price: values.price,
-      stock: values.stock,
-      description: values.description,
-      startDate: values.startDate.format('YYYY-MM-DD'),
-      endDate: values.endDate.format('YYYY-MM-DD'),
-    };
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-    // Update the products list in ProductManager
-    setProducts((prevProducts) => [...prevProducts, newProduct]);
-    
-    message.success('Product added successfully!');
-    navigate('/admin/list-product'); // Redirect to product list
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || !image || !formData.price || !formData.category) {
+      setError('Name, image, price, and category are required.');
+      return;
+    }
+
+    // Validate price and stock are numbers
+    if (isNaN(formData.price) || isNaN(formData.stock)) {
+      setError('Price and stock must be valid numbers.');
+      return;
+    }
+
+    const productData = new FormData();
+    // First append the image
+    if (image) {
+      productData.append('image', image);
+    }
+    // Then append other form data
+    Object.keys(formData).forEach(key => {
+      if (formData[key]) { // Only append if value exists
+        productData.append(key, formData[key]);
+      }
+    });
+
+    try {
+      setLoading(true);
+      const response = await createProduct(productData);
+      if (response.success) {
+        message.success('Product created successfully!');
+        navigate('/seller/products');
+      } else {
+        setError(response.message || 'Failed to create product');
+      }
+    } catch (err) {
+      console.error('Error creating product:', err);
+      setError('An error occurred while creating the product');
+    } finally {
+      setLoading(false);
+    }
+
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await getCategories();
+      if (response.success) {
+        setCategories(response.data);
+      } else {
+        message.error('Failed to load categories');
+      }
+    } catch (err) {
+      console.error('Error loading categories:', err);
+      message.error('Failed to load categories');
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // When category changes, update subcategories
+    if (name === 'category') {
+      const selectedCategory = categories.find(cat => cat._id === value);
+      if (selectedCategory && selectedCategory.subcategories) {
+        setSubcategories(selectedCategory.subcategories);
+        // Reset subcategory when category changes
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          subcategory: ''
+        }));
+      } else {
+        setSubcategories([]);
+      }
+    }
+  };
+
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
-      <h2 className="text-2xl font-bold mb-4">Add New Product</h2>
-      <Form form={form} layout="vertical" onFinish={onFinish}>
-        <Form.Item
-          label="Product Name"
-          name="name"
-          rules={[{ required: true, message: 'Please enter product name!' }]}
-        >
-          <Input placeholder="Enter product name" />
-        </Form.Item>
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
 
-        <Form.Item
-          label="Category"
-          name="category"
-          rules={[{ required: true, message: 'Please select a category!' }]}
-        >
-          <Select placeholder="Select a category">
-            <Option value="Footwear">Footwear</Option>
-            <Option value="Clothing">Clothing</Option>
-            <Option value="Electronics">Electronics</Option>
-            <Option value="Home Appliance">Home Appliance</Option>
-            <Option value="Accessories">Accessories</Option>
-          </Select>
-        </Form.Item>
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
 
-        <Form.Item
-          label="Brand"
-          name="brand"
-          rules={[{ required: true, message: 'Please input the brand!' }]}
-        >
-          <Input.TextArea placeholder="Enter brand" rows={1} />
-        </Form.Item>
+        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Product Name */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Product Name*
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                required
+              />
+            </div>
 
-        <Form.Item
-          label="Color"
-          name="color"
-          rules={[{ required: true, message: 'Please input the color!' }]}
-        >
-          <Input.TextArea placeholder="Enter color" rows={1} />
-        </Form.Item>
+            {/* Category */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Category*
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                required
+              >
+                <option value="">Select Category</option>
+                {categories.map(category => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <Form.Item
-          label="Price"
-          name="price"
-          rules={[{ required: true, message: 'Please input the price!' }]}
-        >
-          <Input.TextArea placeholder="Enter Price" rows={1} />
-        </Form.Item>
+            {/* Subcategory */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Subcategory
+              </label>
+              <select
+                name="subcategory"
+                value={formData.subcategory}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                disabled={!formData.category || subcategories.length === 0}
+              >
+                <option value="">Select Subcategory</option>
+                {subcategories.map(subcat => (
+                  <option key={subcat._id} value={subcat._id}>
+                    {subcat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <Form.Item
-          label="Stock"
-          name="stock"
-          rules={[{ required: true, message: 'Please input the stock!' }]}
-        >
-          <Input.TextArea placeholder="Enter Stock" rows={1} />
-        </Form.Item>
+            {/* Price */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Price*
+              </label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                required
+                min="0"
+                step="0.01"
+              />
+            </div>
 
-        <Form.Item
-          label="Description"
-          name="description"
-          rules={[{ required: true, message: 'Please enter the description!' }]}
-        >
-          <Input.TextArea placeholder="Enter product description" rows={4} />
-        </Form.Item>
+            {/* Stock */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Stock*
+              </label>
+              <input
+                type="number"
+                name="stock"
+                value={formData.stock}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                required
+                min="0"
+              />
+            </div>
 
-        <Form.Item>
-        <Dragger {...props}>
-    <p className="ant-upload-drag-icon">
-      <InboxOutlined />
-    </p>
-    <p className="ant-upload-text">Click or drag file to this area to upload</p>
-    <p className="ant-upload-hint">
-      Support for a single or bulk upload. Strictly prohibited from uploading company data or other
-      banned files.
-    </p>
-  </Dragger>
-  </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" className="bg-orange-600 text-white rounded-full">
-            Add Product
-          </Button>
-        </Form.Item>
-      </Form>
+            {/* Brand */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Brand
+              </label>
+              <input
+                type="text"
+                name="brand"
+                value={formData.brand}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+              />
+            </div>
+
+            {/* Color */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Color
+              </label>
+              <input
+                type="text"
+                name="color"
+                value={formData.color}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+              />
+            </div>
+
+            {/* Warranty */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Warranty (months)
+              </label>
+              <input
+                type="number"
+                name="warranty"
+                value={formData.warranty}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                min="0"
+              />
+            </div>
+
+            {/* Image Upload */}
+            <div className="mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Product Image*
+              </label>
+              <input
+                type="file"
+                onChange={handleImageChange}
+                accept="image/*"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                required
+              />
+              {imagePreview && (
+                <div className="mt-2">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="mb-6">
+            <label className="block text-gray-700 text-sm font-bold mb-2">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+              rows="4"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => navigate('/seller/products')}
+              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-white bg-orange-600 rounded-lg hover:bg-orange-700"
+              disabled={loading}
+            >
+              {loading ? 'Creating...' : 'Create Product'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default Addproduct;
+export default AddProduct;
