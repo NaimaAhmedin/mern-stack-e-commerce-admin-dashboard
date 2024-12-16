@@ -3,19 +3,25 @@ const bcrypt = require('bcrypt');
 
 // User Schema
 const userSchema = new mongoose.Schema({
-  name: {
+  firstName: {
     type: String,
-    required: [true, 'User must have a name'],
+    required: [true, 'User must have a first name'],
     trim: true,
   },
-  username: {
+  lastName: {
+    type: String,
+    required: [true, 'User must have a last name'],
+    trim: true,
+  },
+  userName: {
     type: String,
     required: [true, 'User must have a username'],
     trim: true,
+    unique: true,
   },
   role: {
     type: String,
-    //default: 'user',
+    // Removed default to allow more flexibility
   },
   
   email: {
@@ -94,4 +100,6 @@ userSchema.methods.correctPassword = async function (candidatePassword, userPass
 };
 
 const User = mongoose.model('User', userSchema);
+module.exports = User;
+
 module.exports = User;
