@@ -1,155 +1,227 @@
-import React from 'react';
-import { GoArrowDownRight, GoArrowUpRight } from "react-icons/go";
-import { Column } from '@ant-design/plots';
-import { Table } from 'antd';
-const columns = [
-    {
-        title: 'SNo',
-        dataIndex: 'key',
-      },
-    {
-      title: 'Name',
-      dataIndex: 'name',
-    },
-    {
-      title: 'Product',
-      dataIndex: 'product',
-    },
-   
-    {
-      title: 'Status',
-      dataIndex: 'status',
-    },
-    {
-        title: 'Date',
-        dataIndex: 'data',
-      },
-    {
-        title: 'Total',
-        dataIndex: 'total',
-      },
-  ];
-  const data1 = [];
-  for (let i=0; i<46; i++)
-    {
-        data1.push({
-    key: i,
-    name: `Edward King ${i}`,
-    product: 32,
-    status: `London, Park Lane no. ${i}`,
-  });}
-const Dashboard = () => {
-    // Data and configuration for the chart
-    const data = [
-        { type: 'Jan', sales: 30 },
-        { type: 'Feb', sales: 48 },
-        { type: 'Mar', sales: 28 },
-        { type: 'Apr', sales: 34 },
-        { type: 'May', sales: 30 },
-        { type: 'Jun', sales: 44 },
-        { type: 'July', sales: 48 },
-        { type: 'Aug', sales: 30 },
-        { type: 'Sept', sales: 28 },
-        { type: 'Oct', sales: 48 },
-        { type: 'Nov', sales: 44 },
-        { type: 'Dec', sales: 40 },
-    ];
+import React from "react";
+import { Layout, Row, Col, Card } from "antd";
+import { FaChartBar } from "react-icons/fa";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
 
-   
-  const config = {
-    data,
-    xField: 'type',
-    yField: 'sales',
-    color: '#ffd333',
-    label: {
-      position: 'top', 
-      style: {
-        fill: '#ffffff',
-        opacity: 1,
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const { Content } = Layout;
+
+const Dashboard = () => {
+  // Example data for the chart (this can be fetched dynamically)
+  const salesData = {
+    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"], // Months
+    datasets: [
+      {
+        label: "Sales",
+        data: [10000, 15000, 12000, 18000, 22000, 21000, 25000], // Example sales data
+        fill: false,
+        borderColor: "rgb(75, 192, 192)",
+        tension: 0.1,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Monthly Sales Performance',
       },
     },
-    xAxis: {
-      label: {
-        autoHide: true,
-        autoRotate: false,
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Month'
+        }
       },
-    },
-    meta: {
-      type: {
-        alias: 'Month',
-      },
-      sales: {
-        alias: 'Income',
-      },
-    },
+      y: {
+        title: {
+          display: true,
+          text: 'Sales ($)'
+        }
+      }
+    }
   };
 
   return (
-    <div>
-      <h3 className="mb-4 title">Dashboard</h3>
-      <div className="d-flex justify-conyent-between align-items-center gap-3">
-        <div className="d-flex justify-content-between align-items-end flex-grow-1 bg-white p-3 rounded-3">
-          <div>
-            <p className='subtitle'>Total</p>
-            <h2 className="mb-0 sub-title">$1100</h2>
+    <Layout style={{ minHeight: "100vh" }}>
+      {/* Main Content Area */}
+      <Layout>
+        <Content
+          style={{
+            margin: "24px 16px 0",
+            padding: "20px",
+            background: "#f0f2f5", // Light background for contrast
+            overflow: "auto",
+          }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <h1>Welcome to the Admin Dashboard</h1>
+            <p>
+              Use the sections below to navigate through user management, sales performance, system health, and more.
+            </p>
           </div>
-          <div className="d-flex flex-column align-items-end">
-            <h6 className="green">
-              <GoArrowUpRight />
-              32%
-            </h6>
-            <p className="mb-0 subtitle">Compared to April 2023</p>
+
+          {/* Dashboard Overview */}
+          <div style={{ marginTop: "20px" }}>
+            <Row gutter={[16, 16]} justify="space-around">
+              {/* Total Users Box */}
+              <Col span={8}>
+                <Card
+                  style={{
+                    background: "linear-gradient(145deg, #ff7f50, #f39c12)",
+                    color: "white",
+                    borderRadius: "20px",
+                    boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)",
+                    textAlign: "center",
+                  }}
+                >
+                  <h2>Total Users</h2>
+                  <p style={{ fontSize: "28px" }}>1,450</p>
+                </Card>
+              </Col>
+
+              {/* Total Sales Box */}
+              <Col span={8}>
+                <Card
+                  style={{
+                    background: "linear-gradient(145deg, #1abc9c, #16a085)",
+                    color: "white",
+                    borderRadius: "20px",
+                    boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)",
+                    textAlign: "center",
+                  }}
+                >
+                  <h2>Total Sales</h2>
+                  <p style={{ fontSize: "28px" }}>$120,500</p>
+                </Card>
+              </Col>
+
+              {/* Pending Tasks Box */}
+              <Col span={8}>
+                <Card
+                  style={{
+                    background: "linear-gradient(145deg, #e74c3c, #c0392b)",
+                    color: "white",
+                    borderRadius: "20px",
+                    boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)",
+                    textAlign: "center",
+                  }}
+                >
+                  <h2>Pending Tasks</h2>
+                  <p style={{ fontSize: "28px" }}>5 Approvals</p>
+                </Card>
+              </Col>
+            </Row>
           </div>
-        </div>
-        <div className="d-flex justify-content-between align-items-end flex-grow-1 bg-white p-3 rounded-3">
-          <div>
-            <p className='subtitle'>Total</p>
-            <h2 className="mb-0 sub-title">$1100</h2>
+
+          {/* Sales Performance Chart */}
+          <div style={{ marginTop: "40px" }}>
+            <h2 style={{ textAlign: "center" }}>Sales Performance</h2>
+            <div style={{ width: "80%", margin: "0 auto" }}>
+              <Line data={salesData} options={chartOptions} />
+            </div>
           </div>
-          <div className="d-flex flex-column align-items-end">
-            <h6 className="red">
-              <GoArrowDownRight />
-              12%
-            </h6>
-            <p className="mb-0 subtitle">Compared to April 2023</p>
+
+          {/* Super Admin-Specific Data */}
+          <div style={{ marginTop: "40px" }}>
+            <h2 style={{ textAlign: "center" }}>System Health & Admin Monitoring</h2>
+            <Row gutter={[16, 16]} justify="space-around">
+              {/* Active Users */}
+              <Col span={8}>
+                <Card
+                  title="Active Users"
+                  style={{ textAlign: "center", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
+                >
+                  <p>1,200 active users</p>
+                </Card>
+              </Col>
+
+              {/* Server Health */}
+              <Col span={8}>
+                <Card
+                  title="Server Health"
+                  style={{ textAlign: "center", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
+                >
+                  <p>Status: <strong>All systems go</strong></p>
+                </Card>
+              </Col>
+
+              {/* New Pending Requests */}
+              <Col span={8}>
+                <Card
+                  title="New Requests"
+                  style={{ textAlign: "center", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
+                >
+                  <p>12 New requests</p>
+                </Card>
+              </Col>
+            </Row>
           </div>
-        </div>
-        <div className="d-flex justify-content-between align-items-end flex-grow-1 bg-white p-3 rounded-3">
-          <div>
-            <p className='subtitle'>Total</p>
-            <h2 className="mb-0 sub-title">$1100</h2>
+
+          {/* Super Admin Extra - More Metrics */}
+          <div style={{ marginTop: "40px" }}>
+            <h2 style={{ textAlign: "center" }}>System Overview</h2>
+            <Row gutter={[16, 16]} justify="space-around">
+              {/* Platform Uptime */}
+              <Col span={8}>
+                <Card
+                  title="Platform Uptime"
+                  style={{ textAlign: "center", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
+                >
+                  <p>99.9% Uptime</p>
+                </Card>
+              </Col>
+
+              {/* Support Tickets */}
+              <Col span={8}>
+                <Card
+                  title="Support Tickets"
+                  style={{ textAlign: "center", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
+                >
+                  <p>3 Tickets Pending</p>
+                </Card>
+              </Col>
+
+              {/* Revenue */}
+              <Col span={8}>
+                <Card
+                  title="Monthly Revenue"
+                  style={{ textAlign: "center", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)" }}
+                >
+                  <p>75,000</p>
+                </Card>
+              </Col>
+            </Row>
           </div>
-          <div className="d-flex flex-column align-items-end">
-            <h6 className="green">
-              <GoArrowUpRight />
-              32%
-            </h6>
-            <p className="mb-0 subtitle">Compared to April 2023</p>
-          </div>
-        </div>
-      </div>
-     
-     <div className="">
-        <h3 className="mb-4">Income Statistics</h3>
-       <div>
-      <Column {...config} />
-    </div>       
-    </div>
-      <div className='mt-4'>
-         <h3 className='mb-4'> Recent Orders</h3>
-         <div>
-            <Table columns={columns} dataSource={data1} />
-        </div>
-      </div>
-    
-    <div className='my-4'>
-<h3 className='mb-4'>Recent Reviews</h3>
-<div className='d-flex'>
-    <div></div>
-    <div></div>
-</div>
-  </div>
-</div>
+        </Content>
+      </Layout>
+    </Layout>
   );
 };
 
