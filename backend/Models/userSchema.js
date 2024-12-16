@@ -3,24 +3,42 @@ const bcrypt = require('bcrypt');
 
 // User Schema
 const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'User must have a name'],
+    trim: true,
+  },
   username: {
     type: String,
     required: [true, 'User must have a username'],
+    trim: true,
   },
   role: {
     type: String,
-   
+    //default: 'user',
   },
   
   email: {
     type: String,
     required: [true, 'User must have an email'],
     unique: true,
+    trim: true,
+    validate: {
+      validator: function (value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      },
+      message: "Invalid email address",
+    },
   },
   password: {
     type: String,
     required: [true, 'User must have a password'],
-    minlength: 8,
+    validate: {
+      validator: (value) => {
+        return value.length > 5;
+      },
+      message: "Password must be at least 6 characters long",
+    },
     select: false, // Prevent password from being returned in queries
   },
   confirmPassword: {
@@ -33,7 +51,34 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords are not the same!',
     },
   },
-});
+  phone: {
+    type: String,
+    required: [true, 'User must have a phone number'],
+    trim: true,
+    validate: {
+      validator: function (value) {
+        return /^(\+251|0)[79][0-9]{8}$/.test(value);
+      },
+      message: "Invalid phone number",
+    },
+  },
+  address: {
+    type: String,
+    default: "",
+  },
+  lastLogin: {
+    type: Date,
+    default: Date.now,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
+  resetPasswordToken: String,
+  resetPasswordExpiresAt: Date,
+  verificationToken: String,
+  verificationExpiresAt: Date,
+}, { timestamps: true });
 
 // Pre-save hook to hash the password
 userSchema.pre('save', async function (next) {
