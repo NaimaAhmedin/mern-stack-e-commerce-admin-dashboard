@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { MdSearch } from "react-icons/md";
-import { getProducts, deleteProduct } from '../../services/productService';
+import { getSellerProducts, deleteProduct } from '../../services/productService';
 
 const Productlist = () => {
   // Dummy data for product
@@ -80,9 +80,9 @@ const Productlist = () => {
   const navigate = useNavigate();
   const fetchProducts = async () => {
     try {
-      const response = await getProducts();
+      const response = await getSellerProducts();
       console.log('Products response:', response); // Debug response
-  
+
       // Check if response has the expected structure
       if (response && (Array.isArray(response) || Array.isArray(response.data))) {
         const productsArray = Array.isArray(response) ? response : response.data;
@@ -103,7 +103,7 @@ const Productlist = () => {
             createdAt: product.createdAt
           };
         });
-  
+
         console.log('Formatted products:', formattedProducts); // Debug formatted products
         setProducts(formattedProducts);
         

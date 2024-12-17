@@ -112,6 +112,7 @@ const EditProduct = () => {
         
         // Update form data and reset subcategory
         setFormData(prev => ({
+
           ...prev,
           category: value,
           subcategory: '' // Reset subcategory when category changes
@@ -144,53 +145,60 @@ const EditProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
     if (!formData.name || !formData.price || !formData.category) {
       setError('Name, price, and category are required.');
       return;
     }
 
     // Validate price and stock are numbers
-    if (isNaN(formData.price) || isNaN(formData.stock)) {
+    if (isNaN(formData.price) || (formData.stock && isNaN(formData.stock))) {
       setError('Price and stock must be valid numbers.');
       return;
     }
 
     try {
       setLoading(true);
-      const productData = new FormData();
+      
+      // Prepare product data for update
+      const productUpdateData = {
+        name: formData.name,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        subcategory: formData.subcategory || undefined,
+        brand: formData.brand || undefined,
+        color: formData.color || undefined,
+        stock: formData.stock ? parseInt(formData.stock) : undefined,
+        warranty: formData.warranty ? parseInt(formData.warranty) : undefined,
+        description: formData.description || undefined
+      };
 
-      // Append all form data
-      Object.keys(formData).forEach(key => {
-        if (formData[key]) {
-          productData.append(key, formData[key]);
-        }
-      });
-
-      // Convert stock to amount for backend
-      productData.set('amount', formData.stock);
-      productData.delete('stock');
-
-      // Append new images
+      // Prepare form data for image upload
+      const imageData = new FormData();
       images.forEach(image => {
-        productData.append('images', image.file);
+        imageData.append('images', image.file);
       });
 
-      // Append current images
-      currentImages.forEach(image => {
-        productData.append('currentImages', image);
-      });
+      console.log('Product Update Data:', productUpdateData);
 
-      const response = await updateProduct(id, productData);
+      // Call update product service
+      const response = await updateProduct(id, productUpdateData);
       
       if (response.success) {
-        message.success('Product updated successfully!');
-        navigate('/seller/products');
+        message.success(response.message || 'Product updated successfully!');
+        navigate('/seller/ProductList');
       } else {
-        setError(response.message || 'Failed to update product');
+        // More detailed error handling
+        const errorMessage = response.message || 'Failed to update product';
+        message.error(errorMessage);
+        setError(errorMessage);
       }
     } catch (err) {
       console.error('Error updating product:', err);
-      setError('An error occurred while updating the product');
+      const errorMessage = err.message || 'An unexpected error occurred';
+      message.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

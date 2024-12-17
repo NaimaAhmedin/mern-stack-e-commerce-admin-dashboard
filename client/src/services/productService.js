@@ -85,21 +85,41 @@ export const getProduct = async (id) => {
 };
 
 // Add a new product
-export const createProduct = async (data) => {
-  const token = localStorage.getItem("token"); // Get the token from localStorage
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`, // Attach the token here for authentication
-    },
-    body: data, // This should be FormData includes image and other data
-  });
+export const createProduct = async (productData) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to create category");
+    const response = await fetch('/api/routes/products', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: productData  // Send FormData directly
+    });
+
+    const responseData = await response.json();
+    console.log('Create Product Response Status:', response.status);
+    console.log('Create Product Response:', responseData);
+
+    if (!response.ok) {
+      throw new Error(responseData.message || 'Error creating product');
+    }
+
+    return {
+      success: true,
+      data: responseData.data,
+      message: responseData.message || 'Product created successfully'
+    };
+  } catch (error) {
+    console.error('Error creating product:', error);
+    return {
+      success: false,
+      message: error.message || 'An unexpected error occurred'
+    };
   }
-  return await response.json();
 };
 
 // Update an existing product
@@ -110,29 +130,67 @@ export const updateProduct = async (id, data) => {
       throw new Error("No authentication token found");
     }
 
+    // If data is a FormData, convert it to a plain object
+    const productData = data instanceof FormData 
+      ? Object.fromEntries(data.entries()) 
+      : data;
+
+    console.log('Updating product with ID:', id);
+    console.log('Product Data:', productData);
+
+    // Validate required fields
+    const requiredFields = ['name', 'price', 'category'];
+    const missingFields = requiredFields.filter(field => 
+      !productData[field] || productData[field] === ''
+    );
+
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    // Prepare data for backend
+    const requestData = {
+      name: productData.name,
+      price: parseFloat(productData.price),
+      categoryId: productData.category,
+      subcategoryId: productData.subcategory || undefined,
+      brand: productData.brand || undefined,
+      color: productData.color || undefined,
+      amount: parseInt(productData.stock || productData.amount) || undefined,
+      warranty: parseInt(productData.warranty) || undefined,
+      description: productData.description || undefined
+    };
+
     const response = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       credentials: 'include',
-      body: data
+      body: JSON.stringify(requestData)
     });
 
+    console.log('Update Response Status:', response.status);
+
+    const result = await response.json();
+    console.log('Update Response:', result);
+
     if (!response.ok) {
-      const errorText = await response.text();
-      try {
-        const errorJson = JSON.parse(errorText);
-        throw new Error(errorJson.message || 'Failed to update product');
-      } catch (e) {
-        throw new Error(errorText || 'Failed to update product');
-      }
+      throw new Error(result.message || 'Failed to update product');
     }
 
-    return await response.json();
+    return { 
+      success: true, 
+      data: result.data, 
+      message: result.message || 'Product updated successfully' 
+    };
   } catch (error) {
     console.error("Error in updateProduct:", error);
-    throw error;
+    return { 
+      success: false, 
+      message: error.message || 'An unexpected error occurred'
+    };
   }
 };
 
@@ -167,5 +225,43 @@ export const deleteProduct = async (id) => {
   } catch (error) {
     console.error("Error in deleteProduct:", error);
     throw error;
+  }
+};
+
+// Fetch products for a seller
+export const getSellerProducts = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch('/api/routes/products', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const responseData = await response.json();
+    console.log('Seller Products Response Status:', response.status);
+    console.log('Seller Products Response:', responseData);
+
+    if (!response.ok) {
+      throw new Error(responseData.message || 'Error fetching seller products');
+    }
+
+    return {
+      success: true,
+      data: responseData.data,
+      message: responseData.message || 'Seller products fetched successfully'
+    };
+  } catch (error) {
+    console.error('Error fetching seller products:', error);
+    return {
+      success: false,
+      message: error.message || 'An unexpected error occurred'
+    };
   }
 };

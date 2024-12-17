@@ -20,7 +20,7 @@ function SellerRoutes({ products, setProducts, addProduct }){
       <Route path='sales-insight' element={<SalesInsights/>}/>
       <Route path="salesHistory" element={<SalesHistory />} />
       <Route path="settings/profile" element={<Profile />} />
-      
+      <Route path='Addproduct' element={<Addproduct />}/>
       <Route path="ProductList" element ={<Productlist products={products} setProducts={setProducts}/> }/>
       <Route path="/seller/ProductList/product/edit/:id" element={<Editproduct products={products} setProducts={setProducts} />  }/>
       <Route path="ProductList/add" element={<Addproduct addProduct={addProduct}/> }/>

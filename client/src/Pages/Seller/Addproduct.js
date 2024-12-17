@@ -36,7 +36,7 @@ const AddProduct = () => {
     }
 
     // Validate price and stock are numbers
-    if (isNaN(formData.price) || isNaN(formData.stock)) {
+    if (isNaN(formData.price) || (formData.stock && isNaN(formData.stock))) {
       setError('Price and stock must be valid numbers.');
       return;
     }
@@ -49,26 +49,36 @@ const AddProduct = () => {
     // Then append other form data
     Object.keys(formData).forEach(key => {
       if (formData[key]) { // Only append if value exists
-        productData.append(key, formData[key]);
+        // Map some keys to match backend expectations
+        const mappedKey = key === 'stock' ? 'amount' : 
+                          key === 'category' ? 'categoryId' : 
+                          key === 'subcategory' ? 'subcategoryId' : 
+                          key;
+        productData.append(mappedKey, formData[key]);
       }
     });
 
     try {
       setLoading(true);
       const response = await createProduct(productData);
+      
       if (response.success) {
-        message.success('Product created successfully!');
-        navigate('/seller/products');
+        message.success(response.message || 'Product created successfully!');
+        navigate('/seller/productList');
       } else {
-        setError(response.message || 'Failed to create product');
+        // More detailed error handling
+        const errorMessage = response.message || 'Failed to create product';
+        message.error(errorMessage);
+        setError(errorMessage);
       }
     } catch (err) {
       console.error('Error creating product:', err);
-      setError('An error occurred while creating the product');
+      const errorMessage = err.message || 'An unexpected error occurred';
+      message.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-
   };
 
   const fetchCategories = async () => {
@@ -108,7 +118,6 @@ const AddProduct = () => {
       }
     }
   };
-
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
