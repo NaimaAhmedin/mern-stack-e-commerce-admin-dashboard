@@ -5,19 +5,24 @@ const bcrypt = require('bcrypt');
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
-    required: [true, 'User must have a first name'],
     trim: true,
+    default: '',
   },
   lastName: {
     type: String,
-    required: [true, 'User must have a last name'],
     trim: true,
+    default: '',
   },
   userName: {
     type: String,
-    required: [true, 'User must have a username'],
     trim: true,
     unique: true,
+    validate: {
+      validator: function(v) {
+        return v && v.length > 0; // Ensure username is not an empty string
+      },
+      message: 'User must have a username'
+    }
   },
   role: {
     type: String,
@@ -59,14 +64,15 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'User must have a phone number'],
     trim: true,
+    default: '',
     validate: {
-      validator: function (value) {
-        return /^(\+251|0)[79][0-9]{8}$/.test(value);
+      validator: function(v) {
+        // Optional phone number validation, but allow empty string
+        return v === '' || /^(\+251|0)[79][0-9]{8}$/.test(v);
       },
-      message: "Invalid phone number",
-    },
+      message: "Invalid phone number format"
+    }
   },
   address: {
     type: String,
@@ -101,5 +107,3 @@ userSchema.methods.correctPassword = async function (candidatePassword, userPass
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
-
-

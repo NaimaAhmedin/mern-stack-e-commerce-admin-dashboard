@@ -31,7 +31,7 @@ const Register = () => {
         },
         body: JSON.stringify({ 
           username: name,
-          role:"Seller", 
+          role:"seller", 
           email, 
           password,
           confirmPassword 
