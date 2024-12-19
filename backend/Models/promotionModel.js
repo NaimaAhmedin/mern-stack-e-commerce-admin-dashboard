@@ -5,6 +5,17 @@ const promotionSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Promotion image is required']
     },
+    link: { 
+        type: String, 
+        validate: {
+            validator: function(v) {
+                // Optional URL validation regex
+                const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+                return v === '' || urlRegex.test(v);
+            },
+            message: props => `${props.value} is not a valid URL!`
+        }
+    },
     startDate: {
         type: Date,
         required: [true, 'Start date is required']

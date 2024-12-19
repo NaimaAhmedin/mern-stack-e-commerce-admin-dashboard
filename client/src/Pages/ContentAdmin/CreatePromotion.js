@@ -5,6 +5,7 @@ import {
   Button, 
   Upload, 
   message, 
+  Input
 } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -49,7 +50,8 @@ const CreatePromotion = () => {
       const promotionData = {
         image: imageBase64,
         startDate: values.dateRange[0].toISOString(),
-        endDate: values.dateRange[1].toISOString()
+        endDate: values.dateRange[1].toISOString(),
+        link: values.link || '' // Add optional link
       };
 
       console.log('Promotion Data:', promotionData);  // Log the promotion data
@@ -100,6 +102,21 @@ const CreatePromotion = () => {
               Click to Upload
             </Button>
           </Upload>
+        </Form.Item>
+
+        <Form.Item
+          name="link"
+          label="Promotion Link (Optional)"
+          rules={[
+            {
+              type: 'url',
+              message: 'Please enter a valid URL',
+            }
+          ]}
+        >
+          <Input 
+            placeholder="Enter promotion link (e.g., https://example.com)"
+          />
         </Form.Item>
 
         <Form.Item

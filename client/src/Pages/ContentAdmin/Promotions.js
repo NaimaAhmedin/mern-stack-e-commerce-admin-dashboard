@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, message } from 'antd';
+import { Table, message, Tooltip } from 'antd';
+import { LinkOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -49,6 +50,13 @@ const Promotions = () => {
     navigate(`/Content-Admin/promotion/edit/${record._id}`);
   };
 
+  // Open Promotion Link
+  const handleOpenLink = (link) => {
+    if (link) {
+      window.open(link, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   // Columns for Promotions Table
   const columns = [
     {
@@ -74,6 +82,30 @@ const Promotions = () => {
       dataIndex: 'endDate',
       key: 'endDate',
       render: (date) => new Date(date).toLocaleDateString()
+    },
+    {
+      title: 'Link',
+      dataIndex: 'link',
+      key: 'link',
+      render: (link) => (
+        link ? (
+          <Tooltip title="Open Link">
+            <a 
+              href={link} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.preventDefault();
+                handleOpenLink(link);
+              }}
+            >
+              <LinkOutlined /> {link}
+            </a>
+          </Tooltip>
+        ) : (
+          <span>No Link</span>
+        )
+      )
     },
     {
       title: 'Status',
