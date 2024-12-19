@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Table, message, Tooltip } from 'antd';
-import { LinkOutlined } from '@ant-design/icons';
+import { Table, message, Tooltip, Button, Popconfirm, Space } from 'antd';
+import { LinkOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Promotions = () => {
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const navigate = useNavigate();
 
   // Fetch Promotions
@@ -55,6 +56,43 @@ const Promotions = () => {
     if (link) {
       window.open(link, '_blank', 'noopener,noreferrer');
     }
+  };
+
+  // Handle row selection
+  const onSelectChange = (newSelectedRowKeys) => {
+    setSelectedRowKeys(newSelectedRowKeys);
+  };
+
+  // Handle batch delete
+  const handleBatchDelete = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await Promise.all(
+        selectedRowKeys.map(id =>
+          axios.delete(`/api/promotions/${id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+        )
+      );
+      message.success(`Successfully deleted ${selectedRowKeys.length} promotions`);
+      setSelectedRowKeys([]);
+      fetchPromotions();
+    } catch (error) {
+      console.error('Failed to delete promotions:', error);
+      message.error('Failed to delete promotions');
+    }
+  };
+
+  // Row selection configuration
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+    selections: [
+      Table.SELECTION_ALL,
+      Table.SELECTION_NONE,
+    ]
   };
 
   // Columns for Promotions Table
@@ -121,18 +159,14 @@ const Promotions = () => {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <span>
-          <button 
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </button>
-          <button 
-            onClick={() => handleDelete(record._id)}
-          >
-            Delete
-          </button>
-        </span>
+        <Button
+          type="primary"
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+          style={{ backgroundColor: '#1890ff' }}
+        >
+          Edit
+        </Button>
       )
     }
   ];
@@ -145,18 +179,48 @@ const Promotions = () => {
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Promotions</h1>
-        <button 
-          onClick={() => navigate('/Content-Admin/promotion/create')}
-        >
-          Create Promotion
-        </button>
+        <Space>
+          {selectedRowKeys.length > 0 && (
+            <Popconfirm
+              title="Delete Selected Promotions"
+              description={`Are you sure to delete ${selectedRowKeys.length} selected promotions? This action cannot be undone.`}
+              onConfirm={handleBatchDelete}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ danger: true }}
+            >
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                size="large"
+              >
+                Delete Selected ({selectedRowKeys.length})
+              </Button>
+            </Popconfirm>
+          )}
+          <Button 
+            type="primary"
+            onClick={() => navigate('/Content-Admin/promotion/create')}
+            style={{ backgroundColor: '#1890ff' }}
+            size="large"
+          >
+            Create Promotion
+          </Button>
+        </Space>
       </div>
 
       <Table 
+        rowSelection={rowSelection}
         columns={columns} 
         dataSource={promotions} 
         loading={loading}
         rowKey="_id"
+        pagination={{
+          defaultPageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`
+        }}
       />
     </div>
   );
