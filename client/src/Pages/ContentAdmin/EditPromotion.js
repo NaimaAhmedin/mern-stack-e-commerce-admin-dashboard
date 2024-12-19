@@ -5,7 +5,8 @@ import {
   Button, 
   Upload, 
   message, 
-  Modal 
+  Modal,
+  Input 
 } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -42,7 +43,8 @@ const EditPromotion = () => {
           dateRange: [
             moment(promotionData.startDate, 'YYYY-MM-DD'),
             moment(promotionData.endDate, 'YYYY-MM-DD')
-          ]
+          ],
+          link: promotionData.link || '' // Set link value
         });
 
         // Set initial image
@@ -97,7 +99,8 @@ const EditPromotion = () => {
       const promotionData = {
         image: imageBase64,
         startDate: values.dateRange[0].toISOString(),
-        endDate: values.dateRange[1].toISOString()
+        endDate: values.dateRange[1].toISOString(),
+        link: values.link || '' // Add link to promotion data
       };
 
       // Send API request
@@ -158,6 +161,21 @@ const EditPromotion = () => {
               Click to Upload
             </Button>
           </Upload>
+        </Form.Item>
+
+        <Form.Item
+          name="link"
+          label="Promotion Link (Optional)"
+          rules={[
+            {
+              type: 'url',
+              message: 'Please enter a valid URL',
+            }
+          ]}
+        >
+          <Input 
+            placeholder="Enter promotion link (e.g., https://example.com)"
+          />
         </Form.Item>
 
         <Form.Item

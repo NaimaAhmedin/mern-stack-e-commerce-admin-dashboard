@@ -9,7 +9,8 @@ exports.createPromotion = asyncHandler(async (req, res) => {
     const { 
       image, 
       startDate, 
-      endDate 
+      endDate,
+      link 
     } = req.body;
 
     // Create promotion
@@ -17,6 +18,7 @@ exports.createPromotion = asyncHandler(async (req, res) => {
       image,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
+      link: link || '',
       createdBy: req.user._id
     });
 
@@ -93,7 +95,8 @@ exports.updatePromotion = asyncHandler(async (req, res) => {
       image, 
       startDate, 
       endDate,
-      isActive 
+      isActive,
+      link 
     } = req.body;
 
     let promotion = await Promotion.findById(req.params.id);
@@ -110,6 +113,7 @@ exports.updatePromotion = asyncHandler(async (req, res) => {
     promotion.startDate = startDate ? new Date(startDate) : promotion.startDate;
     promotion.endDate = endDate ? new Date(endDate) : promotion.endDate;
     promotion.isActive = isActive !== undefined ? isActive : promotion.isActive;
+    promotion.link = link !== undefined ? link : promotion.link;
 
     await promotion.save();
 
