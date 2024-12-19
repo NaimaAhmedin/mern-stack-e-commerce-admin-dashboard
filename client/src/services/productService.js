@@ -87,38 +87,26 @@ export const getProduct = async (id) => {
 // Add a new product
 export const createProduct = async (productData) => {
   try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    const response = await fetch('/api/routes/products', {
-      method: 'POST',
+    const token = localStorage.getItem("token");
+    const response = await fetch(API_URL, {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`
+        "Authorization": `Bearer ${token}`
       },
-      body: productData  // Send FormData directly
+      credentials: 'include',
+      body: productData
     });
 
-    const responseData = await response.json();
-    console.log('Create Product Response Status:', response.status);
-    console.log('Create Product Response:', responseData);
+    const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(responseData.message || 'Error creating product');
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
-    return {
-      success: true,
-      data: responseData.data,
-      message: responseData.message || 'Product created successfully'
-    };
+    return data;
   } catch (error) {
-    console.error('Error creating product:', error);
-    return {
-      success: false,
-      message: error.message || 'An unexpected error occurred'
-    };
+    console.error("Error creating product:", error);
+    throw error;
   }
 };
 

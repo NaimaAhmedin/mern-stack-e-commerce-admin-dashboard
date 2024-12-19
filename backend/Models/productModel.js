@@ -23,9 +23,9 @@ const productSchema = new mongoose.Schema({
   rating: { type: Number, default: 0 },
   warranty: { type: Number, default: 0 },
   description: { type: String },
-  image: { 
-    type: String, 
-    required: [true, 'Product image is required']
+  images: { 
+    type: [String], 
+    required: [true, 'Product images are required']
   }
 }, { timestamps: true });
 

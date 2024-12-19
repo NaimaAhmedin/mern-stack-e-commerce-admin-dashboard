@@ -35,11 +35,17 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ 
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB file size limit
+  limits: { 
+    fileSize: 5 * 1024 * 1024, // 5MB file size limit
+    files: 5 // Maximum 5 files
+  } 
 });
 
 // Middleware for single image upload
 const uploadSingleImage = upload.single('image');
+
+// Middleware for multiple image upload (up to 5 images)
+const uploadMultipleImages = upload.array('images', 5);
 
 // Get all products (with optional seller filtering)
 exports.getAllProducts = async (req, res) => {
@@ -91,8 +97,13 @@ exports.getProductById = async (req, res) => {
 
 // Create a new product
 exports.createProduct = async (req, res) => {
-  // Use multer middleware to handle file upload
-  uploadSingleImage(req, res, async (err) => {
+  // Use multer middleware to handle multiple file uploads
+  uploadMultipleImages(req, res, async (err) => {
+    // Log any multer errors for debugging
+    console.log('Multer Upload Error:', err);
+    console.log('Request Files:', req.files);
+    console.log('Request Body:', req.body);
+
     // Handle multer upload errors
     if (err instanceof multer.MulterError) {
       return res.status(400).json({ 
@@ -133,11 +144,19 @@ exports.createProduct = async (req, res) => {
         });
       }
 
-      // Validate uploaded image
-      if (!req.file) {
+      // Validate uploaded images
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({ 
           success: false,
-          message: 'Product image is required' 
+          message: 'At least one product image is required' 
+        });
+      }
+
+      // Validate number of images
+      if (req.files.length > 5) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Maximum 5 images are allowed' 
         });
       }
 
@@ -153,7 +172,7 @@ exports.createProduct = async (req, res) => {
         amount, 
         warranty, 
         description, 
-        image: req.file.filename  // Save the filename of the uploaded image
+        images: req.files.map(file => file.filename)  // Save filenames of uploaded images
       };
 
       const newProduct = new Product(productData);
@@ -167,11 +186,13 @@ exports.createProduct = async (req, res) => {
     } catch (error) {
       console.error('Product creation error:', error);
       
-      // If an image was uploaded but product creation failed, delete the uploaded image
-      if (req.file) {
-        const imagePath = path.join(__dirname, '../uploads/products', req.file.filename);
-        fs.unlink(imagePath, (unlinkErr) => {
-          if (unlinkErr) console.error('Error deleting uploaded image:', unlinkErr);
+      // If images were uploaded but product creation failed, delete the uploaded images
+      if (req.files) {
+        req.files.forEach(file => {
+          const imagePath = path.join(__dirname, '../uploads/products', file.filename);
+          fs.unlink(imagePath, (unlinkErr) => {
+            if (unlinkErr) console.error('Error deleting uploaded image:', unlinkErr);
+          });
         });
       }
 

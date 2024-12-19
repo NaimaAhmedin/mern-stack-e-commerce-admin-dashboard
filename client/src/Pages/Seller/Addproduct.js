@@ -17,8 +17,8 @@ const AddProduct = () => {
     color: '',
     warranty: ''
   });
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [images, setImages] = useState([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [error, setError] = useState('');
@@ -30,8 +30,8 @@ const AddProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !image || !formData.price || !formData.category) {
-      setError('Name, image, price, and category are required.');
+    if (!formData.name || !images.length || !formData.price || !formData.category) {
+      setError('Name, images, price, and category are required.');
       return;
     }
 
@@ -42,10 +42,10 @@ const AddProduct = () => {
     }
 
     const productData = new FormData();
-    // First append the image
-    if (image) {
-      productData.append('image', image);
-    }
+    // First append the images
+    images.forEach((image, index) => {
+      productData.append('images', image);
+    });
     // Then append other form data
     Object.keys(formData).forEach(key => {
       if (formData[key]) { // Only append if value exists
@@ -120,11 +120,11 @@ const AddProduct = () => {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImage(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
+    const files = e.target.files;
+    const newImages = Array.from(files);
+    setImages(prev => [...prev, ...newImages]);
+    const newImagePreviewUrls = newImages.map(file => URL.createObjectURL(file));
+    setImagePreviewUrls(prev => [...prev, ...newImagePreviewUrls]);
   };
 
   return (
@@ -276,22 +276,26 @@ const AddProduct = () => {
             {/* Image Upload */}
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
-                Product Image*
+                Product Images*
               </label>
               <input
                 type="file"
+                multiple
                 onChange={handleImageChange}
                 accept="image/*"
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
                 required
               />
-              {imagePreview && (
-                <div className="mt-2">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-32 h-32 object-cover rounded-lg"
-                  />
+              {imagePreviewUrls.length > 0 && (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {imagePreviewUrls.map((url, index) => (
+                    <img
+                      key={index}
+                      src={url}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                  ))}
                 </div>
               )}
             </div>
