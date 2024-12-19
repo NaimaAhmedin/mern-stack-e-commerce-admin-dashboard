@@ -13,16 +13,21 @@ const userSchema = new mongoose.Schema({
     trim: true,
     default: '',
   },
-  userName: {
+  // userName: {
+  //   type: String,
+  //   trim: true,
+  //   unique: true,
+  //   validate: {
+  //     validator: function(v) {
+  //       return v && v.length > 0; // Ensure username is not an empty string
+  //     },
+  //     message: 'User must have a username'
+  //   }
+  // },
+  name: {
     type: String,
+    default: '',
     trim: true,
-    unique: true,
-    validate: {
-      validator: function(v) {
-        return v && v.length > 0; // Ensure username is not an empty string
-      },
-      message: 'User must have a username'
-    }
   },
   role: {
     type: String,

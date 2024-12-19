@@ -19,8 +19,11 @@ const productSchema = new mongoose.Schema({
   },
   color: { type: String },
   price: { type: Number, required: true },
-  amount: { type: Number, default: 0 },
-  rating: { type: Number, default: 0 },
+  quantity: { type: Number, default: 0 },
+  ratings: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Rating'
+  }],
   warranty: { type: Number, default: 0 },
   description: { type: String },
   images: { 

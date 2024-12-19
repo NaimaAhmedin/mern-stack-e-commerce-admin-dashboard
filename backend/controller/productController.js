@@ -131,7 +131,7 @@ exports.createProduct = async (req, res) => {
         brand, 
         color, 
         price, 
-        amount, 
+        quantity, 
         warranty, 
         description 
       } = req.body;
@@ -169,7 +169,7 @@ exports.createProduct = async (req, res) => {
         brand, 
         color, 
         price, 
-        amount, 
+        quantity, 
         warranty, 
         description, 
         images: req.files.map(file => file.filename)  // Save filenames of uploaded images
@@ -219,7 +219,7 @@ exports.updateProduct = async (req, res) => {
       brand, 
       color, 
       price, 
-      amount, 
+      quantity, 
       warranty, 
       description, 
       image 
@@ -234,10 +234,10 @@ exports.updateProduct = async (req, res) => {
     }
 
     // Validate numeric fields
-    if (isNaN(price) || isNaN(amount)) {
+    if (isNaN(price) || isNaN(quantity)) {
       return res.status(400).json({ 
         success: false,
-        message: 'Price and amount must be valid numbers' 
+        message: 'Price and quantity must be valid numbers' 
       });
     }
 
@@ -265,7 +265,7 @@ exports.updateProduct = async (req, res) => {
       brand, 
       color, 
       price, 
-      amount, 
+      quantity, 
       warranty, 
       description, 
       image
