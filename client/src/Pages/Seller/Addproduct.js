@@ -10,7 +10,7 @@ const AddProduct = () => {
     name: '',
     description: '',
     price: '',
-    stock: '',
+    quantity: '', 
     category: '',
     subcategory: '',
     brand: '',
@@ -30,47 +30,86 @@ const AddProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !images.length || !formData.price || !formData.category) {
-      setError('Name, images, price, and category are required.');
-      return;
-    }
+    
+    // Reset error state
+    setError('');
 
-    // Validate price and stock are numbers
-    if (isNaN(formData.price) || (formData.stock && isNaN(formData.stock))) {
-      setError('Price and stock must be valid numbers.');
-      return;
-    }
-
+    // Create a new FormData object
     const productData = new FormData();
-    // First append the images
-    images.forEach((image, index) => {
+    
+    // Append images first
+    images.forEach((image) => {
       productData.append('images', image);
     });
-    // Then append other form data
-    Object.keys(formData).forEach(key => {
-      if (formData[key]) { // Only append if value exists
-        // Map some keys to match backend expectations
-        const mappedKey = key === 'stock' ? 'amount' : 
-                          key === 'category' ? 'categoryId' : 
-                          key === 'subcategory' ? 'subcategoryId' : 
-                          key;
-        productData.append(mappedKey, formData[key]);
-      }
-    });
+
+    // Validate required fields
+    if (!formData.name) {
+      setError('Product name is required');
+      return;
+    }
+
+    if (!formData.price) {
+      setError('Product price is required');
+      return;
+    }
+
+    if (!formData.category) {
+      setError('Category is required');
+      return;
+    }
+
+    if (images.length === 0) {
+      setError('At least one product image is required');
+      return;
+    }
+
+    // Validate price and quantity are numbers
+    const parsedPrice = parseFloat(formData.price);
+    const parsedQuantity = parseInt(formData.quantity || 0);
+
+    if (isNaN(parsedPrice)) {
+      setError('Price must be a valid number');
+      return;
+    }
+
+    if (formData.quantity && isNaN(parsedQuantity)) {
+      setError('Quantity must be a valid number');
+      return;
+    }
+
+    // Prepare product data object to send
+    const productDataToSend = {
+      name: formData.name,
+      description: formData.description || '',
+      price: parsedPrice,
+      quantity: parsedQuantity,
+      category: formData.category,
+      subcategory: formData.subcategory || '',
+      brand: formData.brand || '',
+      color: formData.color || '',
+      warranty: formData.warranty || 0
+    };
 
     try {
       setLoading(true);
-      const response = await createProduct(productData);
       
-      if (response.success) {
-        message.success(response.message || 'Product created successfully!');
-        navigate('/seller/productList');
-      } else {
-        // More detailed error handling
-        const errorMessage = response.message || 'Failed to create product';
-        message.error(errorMessage);
-        setError(errorMessage);
-      }
+      // Create a new FormData object for file upload
+      const formDataForUpload = new FormData();
+      
+      // Append images
+      images.forEach((image) => {
+        formDataForUpload.append('images', image);
+      });
+
+      // Append other product data
+      Object.keys(productDataToSend).forEach(key => {
+        formDataForUpload.append(key, productDataToSend[key]);
+      });
+
+      const response = await createProduct(formDataForUpload);
+      
+      message.success(response.message || 'Product created successfully!');
+      navigate('/seller/productList');
     } catch (err) {
       console.error('Error creating product:', err);
       const errorMessage = err.message || 'An unexpected error occurred';
@@ -214,15 +253,15 @@ const AddProduct = () => {
               />
             </div>
 
-            {/* Stock */}
+            {/* Quantity */}
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
-                Stock*
+                Quantity*
               </label>
               <input
                 type="number"
-                name="stock"
-                value={formData.stock}
+                name="quantity"
+                value={formData.quantity}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
                 required

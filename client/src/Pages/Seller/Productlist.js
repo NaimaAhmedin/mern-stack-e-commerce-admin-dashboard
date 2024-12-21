@@ -97,7 +97,7 @@ const Productlist = () => {
             category: product.categoryId?.name || 'N/A',
             color: product.color || 'N/A',
             price: product.price || 0,
-            stock: product.amount || 0,
+            stock: product.quantity || 0,
             description: product.description || 'N/A',
             image: product.image ? `/uploads/${product.image}` : 'fallback-image-url',
             createdAt: product.createdAt
@@ -177,7 +177,7 @@ useEffect(() => {
     if (allSelected) {
       setSelectedProducts([]);
     } else {
-      setSelectedProducts(filteredProducts.map((product) => product._id));
+      setSelectedProducts(filteredProducts.map((product) => product.id));
     }
   };
 
@@ -201,44 +201,27 @@ useEffect(() => {
     if (!confirmDelete) return;
 
     try {
-      await Promise.all(selectedProducts.map((id) => deleteProduct(id)));
-      await fetchProducts(); // Refresh the list after deletion
+      // Attempt to delete selected products
+      const deletePromises = selectedProducts.map(id => deleteProduct(id));
+      await Promise.all(deletePromises);
+
+      // Refresh the product list after deletion
+      await fetchProducts();
+
+      // Clear selected products
       setSelectedProducts([]);
-      message.success('Product deleted successfully');
-    } catch (err) {
-      console.error('Error deleting Product:', err);
-      message.error(err.message || "Failed to delete Product");
+
+      message.success(`Successfully deleted ${selectedProducts.length} product(s)`);
+    } catch (error) {
+      console.error('Error deleting products:', error);
+      message.error(error.message || 'Failed to delete products');
     }
   };
 
-  // const handleViewDetails = (product) => {
-   
-  //   Modal.info({
-  //     title: 'Product Details',
-  //     width: 'fit-content',
-  //     content: (
-  //       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px'  }}>
-  //           <div style={{ flex: 1, minWidth: '280px'}}>
-  //             <p><strong>Product ID:</strong> {product.id}</p>
-  //             <p><strong>Product Name:</strong> {product.name}</p>
-  //             <p><strong>Brand :</strong> {product.brand}</p>
-  //             <p><strong>Category :</strong> {product.category}</p>
-  //             <p><strong>Color :</strong> {product.category}</p>
-  //             <p><strong>Posted Time :</strong> {new Date(`1970-01-01T${product.postedTime}:00`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
-  //             <p><strong>Posted Date :</strong> {new Date(product.postedDate).toLocaleDateString()}</p>
-  //             <p><strong>Stock :</strong> {product.stock}</p>
-  //             <p><strong>Price :</strong> {product.price.toFixed(2)}</p>
-  //            <p><strong>Description :</strong> {product.description}</p>
-  //       </div>
-  //       <div style={{  flex: 1, minWidth: '280px', textAlign: 'center' }}>
-  //             <img src={product.image} alt={product.name} style={{ maxWidth: '250px', borderRadius: '8px' }} />
-  //           </div>
-  //         </div>
-  //     ),
-  //     onOk() { console.log('Modal closed');},
-     
-  //   });
-  // };git
+  // Handle bulk delete of selected products
+  const handleDeleteSelected = () => {
+    handleDelete();
+  };
 
   const handleViewDetails = (product) => {
     Modal.info({
@@ -273,17 +256,124 @@ useEffect(() => {
     });
   };
 
-  // const toggleSelectProduct = (key) => {
-  //   setSelectedProducts(prev =>
-  //     prev.includes(key) ? prev.filter(productKey => productKey !== key) : [...prev, key]
-  //   );
-  // };
-
-  const handleDeleteSelected = () => {
-    setProducts(products.filter(product => !selectedProducts.includes(product.key)));
-    setSelectedProducts([]);
-    message.success('Selected products deleted successfully!');
-  };
+  const columns = [
+    {
+      title: "Select",
+      key: "select",
+      render: (text, record) => (
+        <input
+          type="checkbox"
+          checked={selectedProducts.includes(record.id)}
+          onChange={() => toggleSelectProduct(record.id)}
+        />
+      ),
+    },
+    {
+      title: "SNo",
+      dataIndex: "key",
+      key: "key",
+      render: (text, record, index) => <span className="font-semibold">{index + 1}</span>,
+    },
+    // {
+    //   title: "Product ID",
+    //   dataIndex: "id",
+    //   key: "id",
+    //   render: (text) => <span className="font-semibold">{text}</span>,
+    // },
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      render: (text) => <span className="font-semibold">{text}</span>,
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      filters: categoryFilters,
+      onFilter: (value, record) => record.category.includes(value),
+    },
+    {
+      title: "Price",
+      dataIndex: "price",
+      key: "price",
+      render: (price) => price !== undefined && price !== null ? `${price.toFixed(2)}` : 'N/A',
+    },
+    {
+      title: "Posted Time",
+      dataIndex: "createdAt",
+      key: "postedTime",
+      render: (timestamp) => {
+        if (!timestamp) return 'N/A';
+        try {
+          const date = new Date(timestamp);
+          return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        } catch (err) {
+          console.error('Error formatting time:', err);
+          return 'Invalid Time';
+        }
+      },
+    },
+    {
+      title: "Posted Date",
+      dataIndex: "createdAt",
+      key: "postedDate",
+      render: (timestamp) => {
+        if (!timestamp) return 'N/A';
+        try {
+          const date = new Date(timestamp);
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        } catch (err) {
+          console.error('Error formatting date:', err);
+          return 'Invalid Date';
+        }
+      },
+      sorter: (a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      },
+    },
+    {
+      title: "Stock",
+      dataIndex: "stock",
+      key: "stock",
+      sorter: (a, b) => a.stock - b.stock,
+      render: (stock) => {
+        const stockColor = stock === 0 ? 'text-red-500' : 
+                               stock < 10 ? 'text-yellow-500' : 
+                               'text-green-500';
+        return (
+          <span className={`font-semibold ${stockColor}`}>
+            {stock}
+          </span>
+        );
+      },
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (text, record) => (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+          <Button type="link" onClick={() => handleViewDetails(record)}>
+            Detail
+          </Button>
+          <Button 
+            type="link" 
+            onClick={() => handleEdit(record.id)}
+          >
+            Edit
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
@@ -309,7 +399,7 @@ useEffect(() => {
           </button>
           {selectedProducts.length > 0 && (
             <button
-              onClick={handleDelete}
+              onClick={handleDeleteSelected}
               className="bg-orange-600 text-white px-4 py-2 rounded-3xl"
             >
               Delete
@@ -317,116 +407,32 @@ useEffect(() => {
           )}
         </div>
       </div>
-      <Table dataSource={filteredProducts} pagination={false} rowKey="key">
-          
-      // Update the Select column
-<Table.Column
-  title="Select"
-  key="select"
-  render={(text, record) => (
-    <input
-      type="checkbox"
-      checked={selectedProducts.includes(record.id)}
-      onChange={() => toggleSelectProduct(record.id)}
-    />
-  )}
-/>
-        <Table.Column 
-          title={<span className="font-semibold text-lg">SNo</span>} 
-          dataIndex="key" 
-          key="key" 
-          render={(text, record, index) => <span className="font-semibold">{index + 1}</span>} 
-          
-        />
-      {/* <Table.Column 
-          title={<span className="font-semibold text-lg">Product ID</span>} 
-          dataIndex="id" 
-          key="id" 
-          render={(text) => <span className="font-semibold">{text}</span>} 
-        /> */}
-        <Table.Column 
-          title={<span className="font-semibold text-lg">Name</span>} 
-          dataIndex="name" 
-          key="name" 
-          render={(text) => <span className="font-semibold">{text}</span>} 
-        />
-        <Table.Column 
-    title= "Category"
-    dataIndex= "category"
-    filters={categoryFilters}
-    onFilter={(value, record) => record.category.includes(value)} 
-  />
-       <Table.Column 
-          title="Price" 
-          dataIndex="price" 
-          key="price" 
-          render={(price) => price !== undefined && price !== null ? `${price.toFixed(2)}` : 'N/A'}
-        />
-        <Table.Column 
-          title="Posted Time" 
-          dataIndex="createdAt" 
-          key="postedTime"
-          render={(timestamp) => {
-            if (!timestamp) return 'N/A';
-            try {
-              const date = new Date(timestamp);
-              return date.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              });
-            } catch (err) {
-              console.error('Error formatting time:', err);
-              return 'Invalid Time';
-            }
-          }}
-        />
-        <Table.Column 
-          title="Posted Date" 
-          dataIndex="createdAt" 
-          key="postedDate"
-          render={(timestamp) => {
-            if (!timestamp) return 'N/A';
-            try {
-              const date = new Date(timestamp);
-              return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              });
-            } catch (err) {
-              console.error('Error formatting date:', err);
-              return 'Invalid Date';
-            }
-          }}
-          sorter={(a, b) => {
-            if (!a.createdAt || !b.createdAt) return 0;
-            return new Date(a.createdAt) - new Date(b.createdAt);
-          }}
-        />
-        <Table.Column 
-          title="Stock" 
-          dataIndex="stock" 
-          key="stock" 
-        />
-        <Table.Column
-  title="Action"
-  key="action"
-  render={(text, record) => (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-      <Button type="link" onClick={() => handleViewDetails(record)}>
-        Detail
-      </Button>
-      <Button 
-        type="link" 
-        onClick={() => handleEdit(record.id)}
-      >
-        Edit
-      </Button>
-    </div>
-  )}
-/>
-      </Table>
+      <Table
+        rowSelection={{
+          selectedRowKeys: selectedProducts,
+          onSelect: (record) => toggleSelectProduct(record.id),
+          onSelectAll: toggleSelectAll
+        }}
+        columns={columns}
+        dataSource={filteredProducts}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} products`
+        }}
+        rowKey="id"
+      />
+      {/* Bulk Actions */}
+      <div className="flex space-x-2">
+        {selectedProducts.length > 0 && (
+          <button
+            onClick={handleDeleteSelected}
+            className="bg-orange-600 text-white px-4 py-2 rounded-3xl"
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   );
 };

@@ -12,7 +12,7 @@ const EditProduct = () => {
     name: '',
     description: '',
     price: '',
-    stock: '',
+    quantity: '',
     category: '',
     subcategory: '',
     brand: '',
@@ -70,7 +70,7 @@ const EditProduct = () => {
           name: productData.name || '',
           description: productData.description || '',
           price: productData.price || '',
-          stock: productData.amount || '',
+          quantity: productData.amount || '',
           category: productData.category || '', 
           subcategory: productData.subcategory || '', 
           brand: productData.brand || '',
@@ -146,54 +146,75 @@ const EditProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Reset error state
+    setError('');
+
     // Validate required fields
-    if (!formData.name || !formData.price || !formData.category) {
-      setError('Name, price, and category are required.');
+    if (!formData.name) {
+      setError('Product name is required');
       return;
     }
 
-    // Validate price and stock are numbers
-    if (isNaN(formData.price) || (formData.stock && isNaN(formData.stock))) {
-      setError('Price and stock must be valid numbers.');
+    if (!formData.price) {
+      setError('Product price is required');
       return;
     }
+
+    if (!formData.category) {
+      setError('Category is required');
+      return;
+    }
+
+    // Validate price and quantity are numbers
+    const parsedPrice = parseFloat(formData.price);
+    const parsedQuantity = parseInt(formData.quantity || 0);
+
+    if (isNaN(parsedPrice)) {
+      setError('Price must be a valid number');
+      return;
+    }
+
+    if (formData.quantity && isNaN(parsedQuantity)) {
+      setError('Quantity must be a valid number');
+      return;
+    }
+
+    // Prepare product data object to send
+    const productDataToSend = {
+      name: formData.name,
+      description: formData.description || '',
+      price: parsedPrice,
+      quantity: parsedQuantity,
+      category: formData.category,
+      subcategory: formData.subcategory || '',
+      brand: formData.brand || '',
+      color: formData.color || '',
+      warranty: formData.warranty || 0
+    };
 
     try {
       setLoading(true);
       
-      // Prepare product data for update
-      const productUpdateData = {
-        name: formData.name,
-        price: parseFloat(formData.price),
-        category: formData.category,
-        subcategory: formData.subcategory || undefined,
-        brand: formData.brand || undefined,
-        color: formData.color || undefined,
-        stock: formData.stock ? parseInt(formData.stock) : undefined,
-        warranty: formData.warranty ? parseInt(formData.warranty) : undefined,
-        description: formData.description || undefined
-      };
+      // Create a new FormData object for file upload
+      const formDataForUpload = new FormData();
+      
+      // Append images if new images are selected
+      if (images.length > 0) {
+        images.forEach((image) => {
+          formDataForUpload.append('images', image.file);
+        });
+      }
 
-      // Prepare form data for image upload
-      const imageData = new FormData();
-      images.forEach(image => {
-        imageData.append('images', image.file);
+      // Append other product data
+      Object.keys(productDataToSend).forEach(key => {
+        formDataForUpload.append(key, productDataToSend[key]);
       });
 
-      console.log('Product Update Data:', productUpdateData);
-
       // Call update product service
-      const response = await updateProduct(id, productUpdateData);
+      const response = await updateProduct(id, formDataForUpload);
       
-      if (response.success) {
-        message.success(response.message || 'Product updated successfully!');
-        navigate('/seller/ProductList');
-      } else {
-        // More detailed error handling
-        const errorMessage = response.message || 'Failed to update product';
-        message.error(errorMessage);
-        setError(errorMessage);
-      }
+      message.success(response.message || 'Product updated successfully!');
+      navigate('/seller/ProductList');
     } catch (err) {
       console.error('Error updating product:', err);
       const errorMessage = err.message || 'An unexpected error occurred';
@@ -297,15 +318,15 @@ const EditProduct = () => {
               />
             </div>
 
-            {/* Stock */}
+            {/* Quantity */}
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
-                Stock*
+                Quantity*
               </label>
               <input
                 type="number"
-                name="stock"
-                value={formData.stock}
+                name="quantity"
+                value={formData.quantity}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
                 required

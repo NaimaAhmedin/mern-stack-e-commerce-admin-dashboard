@@ -88,22 +88,46 @@ export const getProduct = async (id) => {
 export const createProduct = async (productData) => {
   try {
     const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    // Convert FormData to object for logging and potential modification
+    const productObject = {};
+    for (let [key, value] of productData.entries()) {
+      productObject[key] = value;
+    }
+
+    console.log('Sending Product Data:', productObject);
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
       },
-      credentials: 'include',
-      body: productData
+      body: JSON.stringify(productObject)
     });
 
     const data = await response.json();
 
+    // Log full response for debugging
+    console.log('Product Creation Response:', {
+      status: response.status,
+      ok: response.ok,
+      data: data
+    });
+
     if (!response.ok) {
+      console.error('Server error details:', data);
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
-    return data;
+    return {
+      success: true,
+      data: data.data,
+      message: data.message || 'Product created successfully'
+    };
   } catch (error) {
     console.error("Error creating product:", error);
     throw error;
@@ -111,74 +135,55 @@ export const createProduct = async (productData) => {
 };
 
 // Update an existing product
-export const updateProduct = async (id, data) => {
+export const updateProduct = async (productId, productData) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
       throw new Error("No authentication token found");
     }
 
-    // If data is a FormData, convert it to a plain object
-    const productData = data instanceof FormData 
-      ? Object.fromEntries(data.entries()) 
-      : data;
-
-    console.log('Updating product with ID:', id);
-    console.log('Product Data:', productData);
-
-    // Validate required fields
-    const requiredFields = ['name', 'price', 'category'];
-    const missingFields = requiredFields.filter(field => 
-      !productData[field] || productData[field] === ''
-    );
-
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    // Convert FormData to object for logging and potential modification
+    const productObject = {};
+    for (let [key, value] of productData.entries()) {
+      productObject[key] = value;
     }
 
-    // Prepare data for backend
-    const requestData = {
-      name: productData.name,
-      price: parseFloat(productData.price),
-      categoryId: productData.category,
-      subcategoryId: productData.subcategory || undefined,
-      brand: productData.brand || undefined,
-      color: productData.color || undefined,
-      amount: parseInt(productData.stock || productData.amount) || undefined,
-      warranty: parseInt(productData.warranty) || undefined,
-      description: productData.description || undefined
-    };
-
-    const response = await fetch(`${API_URL}/${id}`, {
-      method: "PUT",
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      credentials: 'include',
-      body: JSON.stringify(requestData)
+    console.log('Sending Product Update Data:', {
+      productId,
+      productData: productObject
     });
 
-    console.log('Update Response Status:', response.status);
+    const response = await fetch(`${API_URL}/${productId}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(productObject)
+    });
 
-    const result = await response.json();
-    console.log('Update Response:', result);
+    const data = await response.json();
+
+    // Log full response for debugging
+    console.log('Product Update Response:', {
+      status: response.status,
+      ok: response.ok,
+      data: data
+    });
 
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to update product');
+      console.error('Server error details:', data);
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
-    return { 
-      success: true, 
-      data: result.data, 
-      message: result.message || 'Product updated successfully' 
+    return {
+      success: true,
+      data: data.data,
+      message: data.message || 'Product updated successfully'
     };
   } catch (error) {
-    console.error("Error in updateProduct:", error);
-    return { 
-      success: false, 
-      message: error.message || 'An unexpected error occurred'
-    };
+    console.error("Error updating product:", error);
+    throw error;
   }
 };
 

@@ -97,196 +97,201 @@ exports.getProductById = async (req, res) => {
 
 // Create a new product
 exports.createProduct = async (req, res) => {
-  // Use multer middleware to handle multiple file uploads
-  uploadMultipleImages(req, res, async (err) => {
-    // Log any multer errors for debugging
-    console.log('Multer Upload Error:', err);
-    console.log('Request Files:', req.files);
+  try {
+    console.log('===== PRODUCT CREATION REQUEST =====');
     console.log('Request Body:', req.body);
+    console.log('Request Files:', req.files);
+    console.log('Authenticated User:', req.user ? {
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role
+    } : 'No user found');
 
-    // Handle multer upload errors
-    if (err instanceof multer.MulterError) {
+    const { 
+      name, 
+      brand, 
+      categoryId, 
+      subcategoryId, 
+      color, 
+      price, 
+      quantity, 
+      warranty, 
+      description 
+    } = req.body;
+
+    // Validate required fields
+    if (!name) {
       return res.status(400).json({ 
         success: false,
-        message: 'File upload error',
-        error: err.message 
-      });
-    } else if (err) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'File upload failed',
-        error: err.message 
+        message: 'Product name is required' 
       });
     }
 
-    try {
-      // Get the seller ID from the authenticated user
-      const seller_id = req.user._id;
-
-      // Get form fields from request body
-      const { 
-        name, 
-        categoryId, 
-        subcategoryId, 
-        brand, 
-        color, 
-        price, 
-        quantity, 
-        warranty, 
-        description 
-      } = req.body;
-
-      // Validate required fields
-      if (!name || !price || !categoryId) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Name, price, and category are required' 
-        });
-      }
-
-      // Validate uploaded images
-      if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'At least one product image is required' 
-        });
-      }
-
-      // Validate number of images
-      if (req.files.length > 5) {
-        return res.status(400).json({ 
-          success: false,
-          message: 'Maximum 5 images are allowed' 
-        });
-      }
-
-      // Prepare product data
-      const productData = {
-        name, 
-        categoryId, 
-        subcategoryId, 
-        seller_id,  // Add seller ID to product data
-        brand, 
-        color, 
-        price, 
-        quantity, 
-        warranty, 
-        description, 
-        images: req.files.map(file => file.filename)  // Save filenames of uploaded images
-      };
-
-      const newProduct = new Product(productData);
-      await newProduct.save();
-
-      res.status(201).json({
-        success: true,
-        data: newProduct,
-        message: 'Product created successfully'
-      });
-    } catch (error) {
-      console.error('Product creation error:', error);
-      
-      // If images were uploaded but product creation failed, delete the uploaded images
-      if (req.files) {
-        req.files.forEach(file => {
-          const imagePath = path.join(__dirname, '../uploads/products', file.filename);
-          fs.unlink(imagePath, (unlinkErr) => {
-            if (unlinkErr) console.error('Error deleting uploaded image:', unlinkErr);
-          });
-        });
-      }
-
-      res.status(500).json({ 
+    if (!price) {
+      return res.status(400).json({ 
         success: false,
-        message: 'Error creating product',
-        error: error.message 
+        message: 'Product price is required' 
       });
     }
-  });
+
+    if (!categoryId) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Category is required' 
+      });
+    }
+
+    // Check if images are uploaded
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'At least one product image is required' 
+      });
+    }
+
+    // Validate and parse numeric fields
+    const parsedPrice = parseFloat(price);
+    const parsedQuantity = parseInt(quantity || 0);
+    const parsedWarranty = parseInt(warranty || 0);
+
+    if (isNaN(parsedPrice)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid price format' 
+      });
+    }
+
+    // Handle local image uploads
+    const imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+
+    const product = await Product.create({
+      name, 
+      brand: brand || '', 
+      categoryId, 
+      subcategoryId, 
+      seller_id: req.user._id,
+      color: color || '', 
+      price: parsedPrice, 
+      quantity: parsedQuantity, 
+      warranty: parsedWarranty, 
+      description: description || '',
+      images: imageUrls
+    });
+
+    res.status(201).json({
+      success: true,
+      data: product,
+      message: 'Product created successfully'
+    });
+  } catch (error) {
+    console.error('Product Creation Error:', error);
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation Error',
+        errors: validationErrors
+      });
+    }
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Duplicate key error',
+        duplicateField: Object.keys(error.keyPattern)[0]
+      });
+    }
+
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error creating product',
+      errorDetails: {
+        name: error.name,
+        message: error.message
+      }
+    });
+  }
 };
 
 // Update a product
 exports.updateProduct = async (req, res) => {
   try {
-    console.log('Update Product Request Body:', req.body);
+    console.log('===== PRODUCT UPDATE REQUEST =====');
+    console.log('Request Body:', req.body);
+    console.log('Request Files:', req.files);
     console.log('Product ID:', req.params.id);
-    console.log('Authenticated User:', req.user);
+    console.log('Authenticated User:', req.user ? {
+      _id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role
+    } : 'No user found');
 
+    const { id } = req.params;
     const { 
       name, 
+      brand, 
       categoryId, 
       subcategoryId, 
-      brand, 
       color, 
       price, 
       quantity, 
       warranty, 
-      description, 
-      image 
+      description 
     } = req.body;
 
     // Validate required fields
-    if (!name || !price || !categoryId) {
+    if (!name) {
       return res.status(400).json({ 
         success: false,
-        message: 'Name, price, and category are required' 
+        message: 'Product name is required' 
       });
     }
 
-    // Validate numeric fields
-    if (isNaN(price) || isNaN(quantity)) {
+    // Validate and parse numeric fields
+    const parsedPrice = parseFloat(price);
+    const parsedQuantity = parseInt(quantity || 0);
+    const parsedWarranty = parseInt(warranty || 0);
+
+    if (isNaN(parsedPrice)) {
       return res.status(400).json({ 
         success: false,
-        message: 'Price and quantity must be valid numbers' 
+        message: 'Invalid price format' 
       });
     }
 
-    // Find the existing product
-    const existingProduct = await Product.findById(req.params.id);
-    if (!existingProduct) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Product not found' 
-      });
-    }
-
-    // Check if the authenticated user is the seller of this product
-    if (existingProduct.seller_id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ 
-        success: false,
-        message: 'You are not authorized to update this product' 
-      });
-    }
-
+    // Prepare update object
     const updateData = {
       name, 
+      brand: brand || '', 
       categoryId, 
       subcategoryId, 
-      brand, 
-      color, 
-      price, 
-      quantity, 
-      warranty, 
-      description, 
-      image
+      color: color || '', 
+      price: parsedPrice, 
+      quantity: parsedQuantity, 
+      warranty: parsedWarranty, 
+      description: description || ''
     };
 
-    // Remove undefined fields to prevent overwriting with undefined
-    Object.keys(updateData).forEach(key => 
-      updateData[key] === undefined && delete updateData[key]
-    );
+    // Handle image updates if files are present
+    if (req.files && req.files.length > 0) {
+      const imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+      updateData.images = imageUrls;
+    }
 
+    // Find and update the product
     const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { 
-        new: true,  // Return the updated document
-        runValidators: true  // Run model validations
-      }
+      id, 
+      updateData, 
+      { new: true, runValidators: true }
     );
 
     if (!product) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
         message: 'Product not found'
       });
@@ -298,11 +303,34 @@ exports.updateProduct = async (req, res) => {
       message: 'Product updated successfully'
     });
   } catch (error) {
-    console.error('Product update error:', error);
+    console.error('Product Update Error:', error);
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation Error',
+        errors: validationErrors
+      });
+    }
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Duplicate key error',
+        duplicateField: Object.keys(error.keyPattern)[0]
+      });
+    }
+
     res.status(500).json({ 
-      success: false,
+      success: false, 
       message: 'Error updating product',
-      error: error.message 
+      errorDetails: {
+        name: error.name,
+        message: error.message
+      }
     });
   }
 };
