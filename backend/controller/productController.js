@@ -2,6 +2,7 @@ const Product = require('../Models/productModel');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const cloudinary = require('../utils/cloudinary');
 
 // Configure multer storage
 const storage = multer.diskStorage({
@@ -103,6 +104,7 @@ exports.createProduct = async (req, res) => {
     console.log('Multer Upload Error:', err);
     console.log('Request Files:', req.files);
     console.log('Request Body:', req.body);
+    console.log('Authenticated User:', req.user);
 
     // Handle multer upload errors
     if (err instanceof multer.MulterError) {
@@ -120,6 +122,14 @@ exports.createProduct = async (req, res) => {
     }
 
     try {
+      // Validate authenticated user
+      if (!req.user || !req.user._id) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not authenticated'
+        });
+      }
+
       // Get the seller ID from the authenticated user
       const seller_id = req.user._id;
 
@@ -135,6 +145,13 @@ exports.createProduct = async (req, res) => {
         warranty, 
         description 
       } = req.body;
+
+      console.log('Received Data:', {
+        name,
+        categoryId,
+        price,
+        seller_id
+      });
 
       // Validate required fields
       if (!name || !price || !categoryId) {
@@ -160,23 +177,56 @@ exports.createProduct = async (req, res) => {
         });
       }
 
+      console.log('Starting Cloudinary uploads...');
+      // Upload images to Cloudinary and get their URLs
+      const imageUploadPromises = req.files.map(async (file) => {
+        try {
+          console.log('Uploading file:', file.path);
+          const result = await cloudinary.uploader.upload(file.path, {
+            folder: "products",
+            resource_type: "auto"
+          });
+          console.log('Cloudinary upload result:', result);
+          return result;
+        } catch (uploadError) {
+          console.error('Cloudinary upload error:', uploadError);
+          throw uploadError;
+        }
+      });
+
+      const uploadedImages = await Promise.all(imageUploadPromises);
+      console.log('All images uploaded:', uploadedImages);
+
       // Prepare product data
       const productData = {
         name, 
         categoryId, 
         subcategoryId, 
-        seller_id,  // Add seller ID to product data
+        seller_id,
         brand, 
         color, 
-        price, 
-        quantity, 
-        warranty, 
-        description, 
-        images: req.files.map(file => file.filename)  // Save filenames of uploaded images
+        price: Number(price), 
+        quantity: Number(quantity || 0), 
+        warranty: Number(warranty || 0), 
+        description,
+        images: uploadedImages.map(image => ({
+          public_id: image.public_id,
+          url: image.secure_url
+        }))
       };
 
+      console.log('Final Product Data:', productData);
       const newProduct = new Product(productData);
       await newProduct.save();
+
+      // Clean up temporary files
+      req.files.forEach(file => {
+        try {
+          fs.unlinkSync(file.path);
+        } catch (unlinkError) {
+          console.error('Error deleting temp file:', unlinkError);
+        }
+      });
 
       res.status(201).json({
         success: true,
@@ -186,20 +236,21 @@ exports.createProduct = async (req, res) => {
     } catch (error) {
       console.error('Product creation error:', error);
       
-      // If images were uploaded but product creation failed, delete the uploaded images
+      // Clean up any uploaded files on error
       if (req.files) {
         req.files.forEach(file => {
-          const imagePath = path.join(__dirname, '../uploads/products', file.filename);
-          fs.unlink(imagePath, (unlinkErr) => {
-            if (unlinkErr) console.error('Error deleting uploaded image:', unlinkErr);
-          });
+          try {
+            fs.unlinkSync(file.path);
+          } catch (unlinkError) {
+            console.error('Error deleting temp file:', unlinkError);
+          }
         });
       }
 
-      res.status(500).json({ 
+      res.status(500).json({
         success: false,
         message: 'Error creating product',
-        error: error.message 
+        error: error.message
       });
     }
   });
@@ -221,8 +272,8 @@ exports.updateProduct = async (req, res) => {
       price, 
       quantity, 
       warranty, 
-      description, 
-      image 
+      description,
+      images // Change from image to images
     } = req.body;
 
     // Validate required fields
@@ -267,14 +318,20 @@ exports.updateProduct = async (req, res) => {
       price, 
       quantity, 
       warranty, 
-      description, 
-      image
+      description
     };
+
+    // Handle images update
+    if (images && Array.isArray(images)) {
+      updateData.images = images;
+    }
 
     // Remove undefined fields to prevent overwriting with undefined
     Object.keys(updateData).forEach(key => 
       updateData[key] === undefined && delete updateData[key]
     );
+
+    console.log('Final update data:', updateData);
 
     const product = await Product.findByIdAndUpdate(
       req.params.id,

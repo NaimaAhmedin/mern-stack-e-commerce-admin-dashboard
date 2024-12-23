@@ -88,19 +88,25 @@ export const getProduct = async (id) => {
 export const createProduct = async (productData) => {
   try {
     const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`
+        // Note: Don't set Content-Type when sending FormData
       },
       credentials: 'include',
       body: productData
     });
 
     const data = await response.json();
+    console.log('Server Response:', data);
 
     if (!response.ok) {
-      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      throw new Error(data.message || `Error creating product`);
     }
 
     return data;
@@ -139,15 +145,25 @@ export const updateProduct = async (id, data) => {
     // Prepare data for backend
     const requestData = {
       name: productData.name,
-      price: parseFloat(productData.price),
+      price: Number(productData.price),
+      quantity: Number(productData.stock || productData.quantity || 0),
       categoryId: productData.category,
       subcategoryId: productData.subcategory || undefined,
       brand: productData.brand || undefined,
       color: productData.color || undefined,
-      amount: parseInt(productData.stock || productData.amount) || undefined,
-      warranty: parseInt(productData.warranty) || undefined,
-      description: productData.description || undefined
+      warranty: productData.warranty ? Number(productData.warranty) : undefined,
+      description: productData.description || undefined,
+      images: productData.images || undefined
     };
+
+    // Validate price and quantity
+    if (isNaN(requestData.price) || requestData.price < 0) {
+      throw new Error('Price must be a valid positive number');
+    }
+
+    if (isNaN(requestData.quantity) || requestData.quantity < 0) {
+      throw new Error('Quantity must be a valid positive number');
+    }
 
     const response = await fetch(`${API_URL}/${id}`, {
       method: "PUT",

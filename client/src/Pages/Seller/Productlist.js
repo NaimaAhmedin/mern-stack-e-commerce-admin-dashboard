@@ -97,9 +97,14 @@ const Productlist = () => {
             category: product.categoryId?.name || 'N/A',
             color: product.color || 'N/A',
             price: product.price || 0,
-            stock: product.amount || 0,
+            stock: product.quantity || 0,
             description: product.description || 'N/A',
-            image: product.image ? `/uploads/${product.image}` : 'fallback-image-url',
+            images: product.images || [],
+            image: product.image || null,
+            warranty: product.warranty || 0,
+            subcategory: product.subcategoryId?.name || 'N/A',
+            categoryId: product.categoryId?._id,
+            subcategoryId: product.subcategoryId?._id,
             createdAt: product.createdAt
           };
         });
@@ -123,27 +128,6 @@ const Productlist = () => {
       setCategoryFilters([]);
     }
   };
-// Fetch product from the backend
-// const fetchProducts = async () => {
-//   try {
-//     const response = await getProducts();
-//     if (response.success && Array.isArray(response.data)) {
-//       setProducts(response.data);
-//       // Extract unique categories
-//       const categories = [...new Set(response.data.map(product => product.category))];
-//       setCategoryFilters(categories.map(cat => ({ text: cat, value: cat })));
-//     } else {
-//       message.error(response.message || 'Failed to load products');
-//       setProducts([]);
-//       setCategoryFilters([]);
-//     }
-//   } catch (err) {
-//     console.error('Error loading products:', err);
-//     message.error(err.message || 'Failed to load products');
-//     setProducts([]);
-//     setCategoryFilters([]);
-//   }
-// };
 
 useEffect(() => {
   fetchProducts();
@@ -167,31 +151,23 @@ useEffect(() => {
   );
 };
 
-  // Check if all products are selected
-  const allSelected =
-  selectedProducts.length > 0 &&
-  selectedProducts.length === filteredProducts.length;
-
-  // Handle select/deselect all
-  const toggleSelectAll = () => {
-    if (allSelected) {
-      setSelectedProducts([]);
-    } else {
-      setSelectedProducts(filteredProducts.map((product) => product._id));
-    }
-  };
-
-  // Navigate to the edit product page
-  // const handleEdit = (id) => {
-  //   navigate(`/product/edit/${id}`);
-  // };
-
-  const handleEdit = (id) => {
-    navigate(`/seller/ProductList/product/edit/${id}`);
-  };
+ // Handle select/deselect all
+ const toggleSelectAll = () => {
+  if (selectedProducts.length === filteredProducts.length) {
+    setSelectedProducts([]);
+  } else {
+    const allProductIds = filteredProducts.map(product => product.id);
+    setSelectedProducts(allProductIds);
+  }
+};
 
   // Delete selected products
-  const handleDelete = async () => {
+  const handleDeleteSelected = async () => {
+    if (selectedProducts.length === 0) {
+      message.warning('Please select products to delete');
+      return;
+    }
+
     const confirmDelete = window.confirm(
       `Are you sure you want to delete ${selectedProducts.length} ${
         selectedProducts.length === 1 ? "product" : "products"
@@ -201,44 +177,19 @@ useEffect(() => {
     if (!confirmDelete) return;
 
     try {
-      await Promise.all(selectedProducts.map((id) => deleteProduct(id)));
-      await fetchProducts(); // Refresh the list after deletion
+      await Promise.all(selectedProducts.map(id => deleteProduct(id)));
+      message.success(`Successfully deleted ${selectedProducts.length} products`);
       setSelectedProducts([]);
-      message.success('Product deleted successfully');
+      fetchProducts(); // Refresh the product list
     } catch (err) {
-      console.error('Error deleting Product:', err);
-      message.error(err.message || "Failed to delete Product");
+      console.error('Error deleting products:', err);
+      message.error('Failed to delete some products');
     }
   };
 
-  // const handleViewDetails = (product) => {
-   
-  //   Modal.info({
-  //     title: 'Product Details',
-  //     width: 'fit-content',
-  //     content: (
-  //       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px'  }}>
-  //           <div style={{ flex: 1, minWidth: '280px'}}>
-  //             <p><strong>Product ID:</strong> {product.id}</p>
-  //             <p><strong>Product Name:</strong> {product.name}</p>
-  //             <p><strong>Brand :</strong> {product.brand}</p>
-  //             <p><strong>Category :</strong> {product.category}</p>
-  //             <p><strong>Color :</strong> {product.category}</p>
-  //             <p><strong>Posted Time :</strong> {new Date(`1970-01-01T${product.postedTime}:00`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
-  //             <p><strong>Posted Date :</strong> {new Date(product.postedDate).toLocaleDateString()}</p>
-  //             <p><strong>Stock :</strong> {product.stock}</p>
-  //             <p><strong>Price :</strong> {product.price.toFixed(2)}</p>
-  //            <p><strong>Description :</strong> {product.description}</p>
-  //       </div>
-  //       <div style={{  flex: 1, minWidth: '280px', textAlign: 'center' }}>
-  //             <img src={product.image} alt={product.name} style={{ maxWidth: '250px', borderRadius: '8px' }} />
-  //           </div>
-  //         </div>
-  //     ),
-  //     onOk() { console.log('Modal closed');},
-     
-  //   });
-  // };git
+  const handleEdit = (id) => {
+    navigate(`/seller/ProductList/product/edit/${id}`);
+  };
 
   const handleViewDetails = (product) => {
     Modal.info({
@@ -251,86 +202,106 @@ useEffect(() => {
             <p><strong>Product Name:</strong> {product.name}</p>
             <p><strong>Brand:</strong> {product.brand || 'N/A'}</p>
             <p><strong>Category:</strong> {product.category}</p>
+            <p><strong>Subcategory:</strong> {product.subcategory}</p>
             <p><strong>Color:</strong> {product.color || 'N/A'}</p>
-            <p><strong>Stock:</strong> {product.stock}</p>
-            <p><strong>Price:</strong> {product.price.toFixed(2)}</p>
+            <p><strong>Quantity in Stock:</strong> {product.stock}</p>
+            <p><strong>Price:</strong> ${product.price.toFixed(2)}</p>
             <p><strong>Description:</strong> {product.description || 'N/A'}</p>
           </div>
-          <div style={{ flex: 1, minWidth: '280px', textAlign: 'center' }}>
-            <img 
-              src={product.image} 
-              alt={product.name} 
-              style={{ maxWidth: '250px', borderRadius: '8px' }} 
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = 'fallback-image-url';
-              }}
-            />
+          <div style={{ flex: 1, minWidth: '280px' }}>
+            {product.images && product.images.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {product.images.slice(0, 5).map((image, index) => (
+                  <div 
+                    key={index} 
+                    className="relative overflow-hidden rounded-lg shadow-md transition-transform duration-300 hover:scale-105"
+                  >
+                    <img 
+                      src={typeof image === 'string' ? image : image.url} 
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-40 object-cover" 
+                    />
+                    {index === 4 && product.images.length > 5 && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-lg">
+                        +{product.images.length - 5}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : product.image ? (
+              <img 
+                src={typeof product.image === 'string' ? product.image : product.image.url}
+                alt={product.name}
+                className="w-full max-w-md h-auto rounded-lg shadow-md object-cover" 
+              />
+            ) : (
+              <div className="flex items-center justify-center h-40 bg-gray-100 rounded-lg">
+                <p className="text-gray-500">No images available</p>
+              </div>
+            )}
           </div>
         </div>
       ),
-      onOk() { console.log('Modal closed'); },
+      onOk() {},
     });
   };
 
-  // const toggleSelectProduct = (key) => {
-  //   setSelectedProducts(prev =>
-  //     prev.includes(key) ? prev.filter(productKey => productKey !== key) : [...prev, key]
-  //   );
-  // };
-
-  const handleDeleteSelected = () => {
-    setProducts(products.filter(product => !selectedProducts.includes(product.key)));
-    setSelectedProducts([]);
-    message.success('Selected products deleted successfully!');
-  };
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Products</h2>
-        
-        <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-bold">Products</h1>
+        <div className="flex items-center gap-4">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-full pl-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="px-4 py-2 border border-gray-300 rounded-full pr-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
-            <MdSearch className="absolute right-2 top-2 text-gray-500" size={20} />
+            <MdSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
           </div>
-          <button
-            onClick={() => navigate('/seller/ProductList/add')}
-            className="bg-orange-600 text-white px-4 py-2 rounded-3xl"
-          >
-            + Add Product
-          </button>
           {selectedProducts.length > 0 && (
-            <button
-              onClick={handleDelete}
-              className="bg-orange-600 text-white px-4 py-2 rounded-3xl"
+            <Button
+              type="primary"
+              danger
+              onClick={handleDeleteSelected}
+              className="bg-orange-500 hover:bg-orange-600 rounded-full flex items-center gap-2"
             >
-              Delete
-            </button>
+              Delete Selected ({selectedProducts.length})
+            </Button>
           )}
+          <Button
+            type="primary"
+            onClick={() => navigate('/seller/addProduct')}
+            className="bg-orange-500 hover:bg-orange-600 rounded-full flex items-center gap-2"
+          >
+            Add New Product
+          </Button>
         </div>
       </div>
+
       <Table dataSource={filteredProducts} pagination={false} rowKey="key">
-          
-      // Update the Select column
-<Table.Column
-  title="Select"
-  key="select"
-  render={(text, record) => (
-    <input
-      type="checkbox"
-      checked={selectedProducts.includes(record.id)}
-      onChange={() => toggleSelectProduct(record.id)}
-    />
-  )}
-/>
+        {/* Select column */}
+        <Table.Column
+          title={
+            <input
+              type="checkbox"
+              checked={selectedProducts.length === filteredProducts.length}
+              onChange={toggleSelectAll}
+            />
+          }
+          key="select"
+          render={(_, record) => (
+            <input
+              type="checkbox"
+              checked={selectedProducts.includes(record.id)}
+              onChange={() => toggleSelectProduct(record.id)}
+            />
+          )}
+        />
         <Table.Column 
           title={<span className="font-semibold text-lg">SNo</span>} 
           dataIndex="key" 

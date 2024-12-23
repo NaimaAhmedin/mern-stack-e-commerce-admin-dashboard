@@ -54,25 +54,14 @@ const EditProduct = () => {
           return;
         }
 
-        // Find the current category
-        const currentCategory = allCategories.find(
-          cat => cat._id === productData.category
-        );
-
-        // Prepare subcategories
-        const currentSubcategories = currentCategory 
-          ? currentCategory.subcategories || [] 
-          : [];
-        setSubcategories(currentSubcategories);
-
         // Set the form data with all product information
         setFormData({
           name: productData.name || '',
           description: productData.description || '',
           price: productData.price || '',
-          stock: productData.amount || '',
-          category: productData.category || '', 
-          subcategory: productData.subcategory || '', 
+          stock: productData.quantity || productData.amount || '',
+          category: productData.categoryId?._id || productData.category || '', 
+          subcategory: productData.subcategoryId?._id || productData.subcategory || '', 
           brand: productData.brand || '',
           color: productData.color || '',
           warranty: productData.warranty || ''
@@ -80,9 +69,27 @@ const EditProduct = () => {
 
         // Handle images
         if (productData.images && Array.isArray(productData.images)) {
-          setCurrentImages(productData.images);
+          console.log('Setting current images:', productData.images);
+          // Handle both string URLs and object URLs
+          const imageUrls = productData.images.map(img => 
+            typeof img === 'string' ? img : img.url || img
+          );
+          setCurrentImages(imageUrls);
         } else if (productData.image) {
+          console.log('Setting single image as array:', [productData.image]);
           setCurrentImages([productData.image]);
+        } else {
+          console.log('No images found in product data');
+          setCurrentImages([]);
+        }
+
+        // If we have a category, load its subcategories
+        if (productData.categoryId?._id || productData.category) {
+          const categoryId = productData.categoryId?._id || productData.category;
+          const selectedCategory = allCategories.find(cat => cat._id === categoryId);
+          if (selectedCategory && selectedCategory.subcategories) {
+            setSubcategories(selectedCategory.subcategories);
+          }
         }
 
       } catch (err) {
@@ -112,7 +119,6 @@ const EditProduct = () => {
         
         // Update form data and reset subcategory
         setFormData(prev => ({
-
           ...prev,
           category: value,
           subcategory: '' // Reset subcategory when category changes
@@ -145,40 +151,98 @@ const EditProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setError(null);
+
     // Validate required fields
     if (!formData.name || !formData.price || !formData.category) {
-      setError('Name, price, and category are required.');
+      message.error('Please fill in all required fields');
       return;
     }
 
-    // Validate price and stock are numbers
-    if (isNaN(formData.price) || (formData.stock && isNaN(formData.stock))) {
-      setError('Price and stock must be valid numbers.');
+    // Prepare product data for update
+    const productUpdateData = {
+      name: formData.name,
+      price: Number(formData.price),
+      quantity: Number(formData.stock || 0),
+      category: formData.category,
+      subcategory: formData.subcategory || undefined,
+      brand: formData.brand || undefined,
+      color: formData.color || undefined,
+      warranty: formData.warranty ? Number(formData.warranty) : undefined,
+      description: formData.description || undefined
+    };
+
+    // Validate price and quantity
+    if (isNaN(productUpdateData.price) || productUpdateData.price < 0) {
+      message.error('Price must be a valid positive number');
+      return;
+    }
+
+    if (isNaN(productUpdateData.quantity) || productUpdateData.quantity < 0) {
+      message.error('Quantity must be a valid positive number');
       return;
     }
 
     try {
       setLoading(true);
       
-      // Prepare product data for update
-      const productUpdateData = {
-        name: formData.name,
-        price: parseFloat(formData.price),
-        category: formData.category,
-        subcategory: formData.subcategory || undefined,
-        brand: formData.brand || undefined,
-        color: formData.color || undefined,
-        stock: formData.stock ? parseInt(formData.stock) : undefined,
-        warranty: formData.warranty ? parseInt(formData.warranty) : undefined,
-        description: formData.description || undefined
-      };
+      // Upload new images to Cloudinary
+      let cloudinaryUrls = [];
+      if (images.length > 0) {
+        try {
+          const uploadPromises = images.map(async (image) => {
+            // Use your Cloudinary cloud name
+            const CLOUDINARY_CLOUD_NAME = 'dmauyxqhi';
+            const CLOUDINARY_UPLOAD_PRESET = 'markato-E-Commerce';
 
-      // Prepare form data for image upload
-      const imageData = new FormData();
-      images.forEach(image => {
-        imageData.append('images', image.file);
-      });
+            const formData = new FormData();
+            formData.append('file', image.file);
+            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+            formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
+            
+            try {
+              const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, 
+                {
+                  method: 'POST',
+                  body: formData
+                }
+              );
+              
+              if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Cloudinary upload error details:', errorData);
+                throw new Error(`Image upload failed: ${JSON.stringify(errorData)}`);
+              }
+              
+              const result = await response.json();
+              console.log('Cloudinary upload success:', result);
+              return result.secure_url;
+            } catch (error) {
+              console.error('Error uploading to Cloudinary:', error);
+              throw error;
+            }
+          });
+          
+          cloudinaryUrls = await Promise.all(uploadPromises);
+          console.log('All Cloudinary uploads successful:', cloudinaryUrls);
+        } catch (error) {
+          console.error('Error uploading images:', error);
+          message.error('Failed to upload one or more images');
+          throw error;
+        }
+      }
+
+      // Combine current and new image URLs
+      const allImageUrls = [
+        ...(currentImages || []),
+        ...cloudinaryUrls
+      ];
+
+      console.log('All image URLs:', allImageUrls);
+
+      // Add images to product update data
+      productUpdateData.images = allImageUrls;
 
       console.log('Product Update Data:', productUpdateData);
 
@@ -300,7 +364,7 @@ const EditProduct = () => {
             {/* Stock */}
             <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
-                Stock*
+                Quantity*
               </label>
               <input
                 type="number"
@@ -377,7 +441,7 @@ const EditProduct = () => {
                     {currentImages.map((image, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={`/uploads/${image}`}
+                          src={typeof image === 'string' ? image : image.url || image}
                           alt={`Current ${index + 1}`}
                           className="w-32 h-32 object-cover rounded-lg"
                         />
@@ -439,7 +503,7 @@ const EditProduct = () => {
           <div className="flex justify-end gap-4">
             <button
               type="button"
-              onClick={() => navigate('/seller/products')}
+              onClick={() => navigate('/seller/ProductList')}
               className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
               disabled={loading}
             >
