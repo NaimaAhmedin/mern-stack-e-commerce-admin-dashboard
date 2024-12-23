@@ -210,35 +210,42 @@ useEffect(() => {
           </div>
           <div style={{ flex: 1, minWidth: '280px' }}>
             {product.images && product.images.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4 max-w-full">
                 {product.images.slice(0, 5).map((image, index) => (
                   <div 
                     key={index} 
-                    className="relative overflow-hidden rounded-lg shadow-md transition-transform duration-300 hover:scale-105"
+                    className="relative overflow-hidden rounded-lg shadow-md"
+                    style={{ 
+                      width: '150px', 
+                      height: '150px',
+                      aspectRatio: '1/1'
+                    }}
                   >
                     <img 
                       src={typeof image === 'string' ? image : image.url} 
                       alt={`${product.name} ${index + 1}`}
-                      className="w-full h-40 object-cover" 
+                      className="absolute inset-0 w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                     />
-                    {index === 4 && product.images.length > 5 && (
-                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center text-white text-lg">
-                        +{product.images.length - 5}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
             ) : product.image ? (
-              <img 
-                src={typeof product.image === 'string' ? product.image : product.image.url}
-                alt={product.name}
-                className="w-full max-w-md h-auto rounded-lg shadow-md object-cover" 
-              />
-            ) : (
-              <div className="flex items-center justify-center h-40 bg-gray-100 rounded-lg">
-                <p className="text-gray-500">No images available</p>
+              <div 
+                className="relative overflow-hidden rounded-lg shadow-md"
+                style={{ 
+                  width: '250px', 
+                  height: '250px',
+                  aspectRatio: '1/1'
+                }}
+              >
+                <img 
+                  src={typeof product.image === 'string' ? product.image : product.image.url}
+                  alt={product.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
               </div>
+            ) : (
+              <p className="text-gray-500 italic">No images available</p>
             )}
           </div>
         </div>
