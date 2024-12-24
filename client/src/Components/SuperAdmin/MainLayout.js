@@ -43,11 +43,20 @@ const MainLayout = () => {
               icon: <FaUsersCog className='fs-4' />, // Icon for managing admins
               label: 'Manage Admin',
               children: [
-                
                 {
                   key: 'AdminList',
                   icon: <FaUserCircle className='fs-4' />,  // Icon for user profile or admin
-                  label: 'Admin List',
+                  label: 'All Admins',
+                },
+                {
+                  key: 'DeliveryAdmins',
+                  icon: <FaUserCircle className='fs-4' />,  // Icon for delivery admin
+                  label: 'Delivery Admins',
+                },
+                {
+                  key: 'ContentAdmins',
+                  icon: <FaUserCircle className='fs-4' />,  // Icon for content admin
+                  label: 'Content Admins',
                 },
                 {
                   key: 'AddAdmin',

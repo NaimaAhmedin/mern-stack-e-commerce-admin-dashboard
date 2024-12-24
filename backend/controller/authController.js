@@ -14,6 +14,18 @@ exports.registerUser = async (req, res, next) => {
     phone = ''
   } = req.body;
 
+  // Check if the current user has permission to create the specified role
+  const currentUserRole = req.user ? req.user.role : null;
+  const adminRoles = ['SuperAdmin', 'DeliveryAdmin', 'ContentAdmin', 'seller'];
+
+  // If a specific role is being assigned, ensure it's done by a super admin
+  if (role && adminRoles.includes(role) && (!currentUserRole || currentUserRole !== 'SuperAdmin')) {
+    return res.status(403).json({
+      success: false,
+      message: 'Only SuperAdmin can assign specific roles'
+    });
+  }
+
   try {
     const user = await User.create({
       userName: username,

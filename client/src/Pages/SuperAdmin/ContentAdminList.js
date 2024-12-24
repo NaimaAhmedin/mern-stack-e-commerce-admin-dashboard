@@ -4,18 +4,18 @@ import { FaEdit, FaTrashAlt, FaUserPlus, FaUserShield } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const AdminList = () => {
+const ContentAdminList = () => {
   const [admins, setAdmins] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editAdmin, setEditAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch admins from backend
-  const fetchAdmins = async () => {
+  // Fetch content admins from backend
+  const fetchContentAdmins = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/users/admins', {
+      const response = await axios.get('/api/users/admins/ContentAdmin', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -23,7 +23,7 @@ const AdminList = () => {
       setAdmins(response.data.data);
       setLoading(false);
     } catch (error) {
-      message.error('Failed to fetch admin list');
+      message.error('Failed to fetch content admin list');
       setLoading(false);
     }
   };
@@ -32,7 +32,7 @@ const AdminList = () => {
   const handleDelete = (admin) => {
     Modal.confirm({
       title: 'Confirm Delete',
-      content: `Are you sure you want to delete the admin ${admin.userName}?`,
+      content: `Are you sure you want to delete the content admin ${admin.userName}?`,
       okText: 'Yes, Delete',
       okType: 'danger',
       cancelText: 'No, Cancel',
@@ -52,12 +52,12 @@ const AdminList = () => {
         }
       });
       
-      message.success('Admin deleted successfully');
-      fetchAdmins(); // Refresh the list
+      message.success('Content Admin deleted successfully');
+      fetchContentAdmins(); // Refresh the list
     } catch (error) {
-      console.error('Failed to delete admin:', error.response ? error.response.data : error);
+      console.error('Failed to delete content admin:', error.response ? error.response.data : error);
       
-      const errorMessage = error.response?.data?.message || 'Failed to delete admin';
+      const errorMessage = error.response?.data?.message || 'Failed to delete content admin';
       message.error(errorMessage);
     }
   };
@@ -70,7 +70,7 @@ const AdminList = () => {
 
   // Save edited admin
   const handleSave = async (values) => {
-    console.log('Attempting to update admin with values:', values);
+    console.log('Attempting to update content admin with values:', values);
     console.log('Editing admin details:', editAdmin);
 
     try {
@@ -87,10 +87,10 @@ const AdminList = () => {
       console.log('Update response:', response.data);
       message.success('Admin role updated successfully');
       setIsModalVisible(false);
-      fetchAdmins(); // Refresh the list
+      fetchContentAdmins(); // Refresh the list
     } catch (error) {
       // Log the full error for debugging
-      console.error('Failed to update admin:', {
+      console.error('Failed to update content admin:', {
         errorResponse: error.response ? error.response.data : error,
         errorMessage: error.message,
         values: values,
@@ -105,7 +105,7 @@ const AdminList = () => {
 
   // Fetch admins on component mount
   useEffect(() => {
-    fetchAdmins();
+    fetchContentAdmins();
   }, []);
 
   const columns = [
@@ -114,19 +114,6 @@ const AdminList = () => {
       dataIndex: 'userName',
       key: 'userName',
       render: (text) => <span style={{ color: '#1A3C9C', fontWeight: '500' }}>{text}</span>,
-    },
-    {
-      title: 'Role',
-      dataIndex: 'role',
-      key: 'role',
-      render: (text) => (
-        <span style={{ 
-          color: text === 'SuperAdmin' ? '#43A047' : '#0288D1',
-          fontWeight: '500'
-        }}>
-          {text}
-        </span>
-      ),
     },
     {
       title: 'Email',
@@ -203,7 +190,7 @@ const AdminList = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h1 style={{ color: '#1A3C9C', fontWeight: 'bold', margin: 0 }}>
             <FaUserShield style={{ marginRight: '10px' }} />
-            Admin List
+            Content Admin List
           </h1>
           <Button
             onClick={handleAddAdminRedirect}
@@ -292,4 +279,4 @@ const AdminList = () => {
   );
 };
 
-export default AdminList;
+export default ContentAdminList;

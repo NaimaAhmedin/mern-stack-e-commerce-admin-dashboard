@@ -1,22 +1,56 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, message } from 'antd';
-import { FaUserShield, FaEnvelope, FaLock, FaUserPlus } from 'react-icons/fa';
+import { Card, Form, Input, Button, message, Select } from 'antd';
+import { FaUserShield, FaEnvelope, FaLock, FaUserPlus, FaUserTag } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const AddAdmin = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (values) => {
+  const handleSubmit = async (values) => {
     if (values.password !== values.confirmPassword) {
       message.error('Passwords do not match');
       return;
     }
 
-    console.log('Admin added:', values);
-    message.success('Admin added successfully');
-    navigate('/main-admin/AdminList');
+    setLoading(true);
+    try {
+      // Get the token from localStorage
+      const token = localStorage.getItem('token');
+
+      // Make API call to register admin
+      const response = await axios.post('/api/auth/register-admin', 
+        {
+          username: values.username,
+          email: values.email,
+          password: values.password,
+          confirmPassword: values.confirmPassword,
+          role: values.role
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      message.success(`${values.role} Admin added successfully`);
+      navigate('/admin/AdminList');
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Failed to add admin');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const adminRoles = [
+    { value: 'SuperAdmin', label: 'Super Admin' },
+    { value: 'DeliveryAdmin', label: 'Delivery Admin' },
+    { value: 'ContentAdmin', label: 'Content Admin' },
+    { value: 'seller', label: 'Seller' }
+  ];
 
   return (
     <div style={{ 
@@ -85,6 +119,31 @@ const AddAdmin = () => {
             />
           </Form.Item>
 
+          {/* Role Selection */}
+          <Form.Item
+            name="role"
+            rules={[{ required: true, message: 'Please select admin role' }]}
+          >
+            <Select
+              prefix={<FaUserTag style={{ color: '#1A3C9C' }} />}
+              placeholder="Select Admin Role"
+              size="large"
+              style={{
+                borderRadius: '6px',
+                backgroundColor: '#E1F5FE',
+                border: 'none',
+                color: '#0288D1'
+              }}
+              suffixIcon={<FaUserTag style={{ color: '#1A3C9C' }} />}
+            >
+              {adminRoles.map(role => (
+                <Select.Option key={role.value} value={role.value}>
+                  {role.label}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           {/* Password Input */}
           <Form.Item
             name="password"
@@ -121,13 +180,13 @@ const AddAdmin = () => {
             />
           </Form.Item>
 
-Senu, [12/13/2024 5:50 AM]
-{/* Submit and Cancel Buttons */}
+          {/* Submit and Cancel Buttons */}
           <Form.Item style={{ marginTop: '30px' }}>
             <div style={{ display: 'flex', gap: '10px' }}>
               <Button
                 type="primary"
                 htmlType="submit"
+                loading={loading}
                 style={{
                   flex: 1,
                   height: '45px',
@@ -145,7 +204,7 @@ Senu, [12/13/2024 5:50 AM]
                 <FaUserPlus /> Add Admin
               </Button>
               <Button
-                onClick={() => navigate('/main-admin/AdminList')}
+                onClick={() => navigate('/admin/AdminList')}
                 style={{
                   flex: 1,
                   height: '45px',

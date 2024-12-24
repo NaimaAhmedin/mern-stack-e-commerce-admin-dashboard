@@ -1,10 +1,16 @@
 const express = require('express');
 const { registerUser, loginUser } = require('../controller/authController');
 const { protect } = require('../middlewares/authMiddleware');
+const roleMiddleware = require('../middlewares/roleMiddleware');
 
 const router = express.Router();
 
 router.post('/register', registerUser);
+router.post('/register-admin', 
+  protect, 
+  roleMiddleware(['SuperAdmin']), 
+  registerUser
+);
 router.post('/login', loginUser);
 
 // New route to validate token

@@ -86,48 +86,224 @@ exports.getUserById = async (req, res, next) => {
 
 // Admin Update User (Admin Only)
 exports.updateUserByAdmin = async (req, res, next) => {
-  const { username, email, role } = req.body;
+  const { id } = req.params;
+  const { role } = req.body;
+
+  // Extensive logging for debugging
+  console.log('Update Admin Request Details:', {
+    requestParams: req.params,
+    requestBody: req.body,
+    requestUser: req.user ? {
+      id: req.user._id,
+      userName: req.user.userName,
+      role: req.user.role
+    } : 'No user in request'
+  });
+
+  // Validate input
+  if (!role) {
+    console.error('Update failed: No role provided');
+    return res.status(400).json({
+      success: false,
+      message: ['Role is required for update']
+    });
+  }
+
+  // Define valid admin roles
+  const validAdminRoles = ['SuperAdmin', 'DeliveryAdmin', 'ContentAdmin'];
 
   try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    // Verify the updating user exists and is a SuperAdmin
+    if (!req.user) {
+      console.error('Update failed: No authenticated user');
+      return res.status(401).json({
+        success: false,
+        message: ['Authentication required']
+      });
     }
 
-    // Update fields if provided
-    if (username) user.username = username;
-    if (email) user.email = email;
-    if (role) user.role = role;
+    // Explicitly check if the updating user is a SuperAdmin
+    if (req.user.role !== 'SuperAdmin') {
+      console.error('Update failed: User is not a SuperAdmin', {
+        userRole: req.user.role
+      });
+      return res.status(403).json({
+        success: false,
+        message: ['Only SuperAdmin can modify user roles']
+      });
+    }
 
-    await user.save();
+    // Find the user to update
+    const user = await User.findById(id);
 
+    if (!user) {
+      console.error('Update failed: User not found', { userId: id });
+      return res.status(404).json({
+        success: false,
+        message: ['User not found']
+      });
+    }
+
+    // Validate role
+    if (!validAdminRoles.includes(role)) {
+      console.error('Update failed: Invalid role', { 
+        providedRole: role, 
+        validRoles: validAdminRoles 
+      });
+      return res.status(400).json({
+        success: false,
+        message: ['Invalid role specified']
+      });
+    }
+
+    // Bypass validation for role update
+    const updatedUser = await User.findByIdAndUpdate(
+      id, 
+      { role }, 
+      { 
+        new: true, 
+        runValidators: false // Bypass schema validation
+      }
+    );
+
+    // Log successful update
+    console.log('Admin role updated successfully:', {
+      userId: updatedUser._id,
+      newRole: updatedUser.role,
+      updatedBy: req.user._id
+    });
+
+    // Return updated user details (excluding password)
     res.status(200).json({
       success: true,
       data: {
+        id: updatedUser._id,
+        userName: updatedUser.userName,
+        email: updatedUser.email,
+        role: updatedUser.role
+      }
+    });
+  } catch (error) {
+    // Log the full error for server-side debugging
+    console.error('Unexpected error updating admin role:', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // Handle potential validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: Object.values(error.errors).map(err => err.message)
+      });
+    }
+    
+    // Generic error response
+    res.status(500).json({
+      success: false,
+      message: ['Internal server error']
+    });
+  }
+};
+
+// Admin Delete User (Admin Only)
+exports.deleteUserByAdmin = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    // Find the user to delete
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent deletion of SuperAdmin
+    if (user.role === 'SuperAdmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete SuperAdmin account'
+      });
+    }
+
+    // Prevent deleting the last SuperAdmin
+    const superAdminCount = await User.countDocuments({ role: 'SuperAdmin' });
+    if (superAdminCount <= 1 && user.role === 'SuperAdmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot delete the last SuperAdmin'
+      });
+    }
+
+    // Delete the user
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: 'Admin deleted successfully',
+      deletedUser: {
         id: user._id,
-        username: user.username,
+        userName: user.userName,
         email: user.email,
-        role: user.role,
-      },
+        role: user.role
+      }
+    });
+  } catch (error) {
+    // Pass errors to global error handler
+    next(error);
+  }
+};
+
+// Get Admins by Role (Admin Only)
+exports.getAdminsByRole = async (req, res, next) => {
+  const { role } = req.params;
+
+  // Define valid admin roles (excluding seller)
+  const adminRoles = ['SuperAdmin', 'DeliveryAdmin', 'ContentAdmin'];
+
+  try {
+    // Validate role
+    if (!adminRoles.includes(role)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid role specified' 
+      });
+    }
+
+    // Find users with the specified role
+    const admins = await User.find({ role })
+      .select('-password') // Exclude password
+      .sort({ createdAt: -1 }); // Sort by most recent first
+
+    res.status(200).json({
+      success: true,
+      count: admins.length,
+      data: admins
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Admin Delete User (Admin Only)
-exports.deleteUserByAdmin = async (req, res, next) => {
+// Get All Admins (Admin Only)
+exports.getAllAdmins = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    // Define admin roles (excluding seller)
+      const adminRoles = ['SuperAdmin', 'DeliveryAdmin', 'ContentAdmin'];
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    // Find all users with admin roles
+    const admins = await User.find({ role: { $in: adminRoles } })
+      .select('-password') // Exclude password
+      .sort({ createdAt: -1 }); // Sort by most recent first
 
-    await user.remove();
-
-    res.status(200).json({ success: true, message: 'User deleted successfully' });
+    res.status(200).json({
+      success: true,
+      count: admins.length,
+      data: admins
+    });
   } catch (error) {
     next(error);
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import MainLayout from './MainLayout';
 import Dashboard from '../../Pages/SuperAdmin/Dashboard';
 import Customers from '../../Pages/SuperAdmin/Customers';
@@ -8,7 +8,8 @@ import ReportsConfig from '../../Pages/SuperAdmin/ReportsConfig';
 import AdminList from '../../Pages/SuperAdmin/AdminList';
 import AddAdmin from '../../Pages/SuperAdmin/AddAdmin';
 import ViewAllUsers from '../../Pages/SuperAdmin/ViewAllUsers';
-
+import DeliveryAdminList from '../../Pages/SuperAdmin/DeliveryAdminList';
+import ContentAdminList from '../../Pages/SuperAdmin/ContentAdminList';
 
 function SuperAdminRoutes() {
     return (
@@ -20,6 +21,8 @@ function SuperAdminRoutes() {
             <Route path="ReportsConfig" element={<ReportsConfig />} />
             <Route path="AdminList" element={<AdminList />} />
             <Route path="AddAdmin" element={<AddAdmin />} />
+            <Route path="DeliveryAdmins" element={<DeliveryAdminList />} />
+            <Route path="ContentAdmins" element={<ContentAdminList />} />
         </Route>
     );
 }

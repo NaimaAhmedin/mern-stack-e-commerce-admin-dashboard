@@ -31,7 +31,10 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    // Removed default to allow more flexibility
+    enum: {
+      values: ['user', 'SuperAdmin', 'DeliveryAdmin', 'seller', 'ContentAdmin'],
+      message: 'Role must be one of: user, SuperAdmin, DeliveryAdmin, seller, or ContentAdmin'
+    }
   },
   
   email: {
