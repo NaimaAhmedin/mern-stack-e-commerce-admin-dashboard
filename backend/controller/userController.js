@@ -308,3 +308,147 @@ exports.getAllAdmins = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get All Sellers (Admin Only)
+exports.getAllSellers = async (req, res, next) => {
+  try {
+    // Construct query to find only sellers
+    const queryObj = { 
+      role: 'seller',
+      ...req.query
+    };
+
+    // Remove special query parameters
+    const excludedFields = ['page', 'sort', 'limit', 'fields'];
+    excludedFields.forEach(el => delete queryObj[el]);
+
+    // Advanced filtering
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+    
+    let query = User.find(JSON.parse(queryStr)).select('-password');
+
+    // Sorting
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(',').join(' ');
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort('-createdAt');
+    }
+
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    // Execute query
+    const sellers = await query;
+    const totalSellers = await User.countDocuments({ role: 'seller' });
+
+    res.status(200).json({
+      status: 'success',
+      results: sellers.length,
+      totalSellers,
+      data: sellers
+    });
+  } catch (error) {
+    console.error('Error fetching sellers:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch sellers',
+      error: error.message
+    });
+  }
+};
+
+// Add new method for updating seller status
+exports.updateSellerStatus = async (req, res, next) => {
+  const { id } = req.params;
+  const { sellerDetails } = req.body;
+
+  // Extensive logging for debugging
+  console.log('Update Seller Status Request:', {
+    requestParams: req.params,
+    requestBody: req.body,
+    requestUser: req.user ? {
+      id: req.user._id,
+      userName: req.user.userName,
+      role: req.user.role
+    } : 'No user in request'
+  });
+
+  try {
+    // Verify the updating user is an admin
+    if (!req.user || !['SuperAdmin', 'ContentAdmin'].includes(req.user.role)) {
+      console.error('Status update failed: Unauthorized access', { 
+        userRole: req.user ? req.user.role : 'No user' 
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can update seller status'
+      });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      console.error('Status update failed: Seller not found', { sellerId: id });
+      return res.status(404).json({
+        success: false,
+        message: 'Seller not found'
+      });
+    }
+
+    // Ensure the user is a seller
+    if (user.role !== 'seller') {
+      console.error('Status update failed: Not a seller', { 
+        userId: id, 
+        userRole: user.role 
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Can only update status for sellers'
+      });
+    }
+
+    // Validate status
+    const validStatuses = ['active', 'suspended'];
+    if (!validStatuses.includes(sellerDetails.status)) {
+      console.error('Status update failed: Invalid status', { 
+        providedStatus: sellerDetails.status,
+        validStatuses: validStatuses
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid seller status'
+      });
+    }
+
+    // Update seller status
+    user.sellerDetails.status = sellerDetails.status;
+    await user.save();
+
+    // Log successful status update
+    console.log('Seller status updated successfully:', {
+      sellerId: user._id,
+      newStatus: user.sellerDetails.status,
+      updatedBy: req.user._id
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        id: user._id,
+        status: user.sellerDetails.status
+      }
+    });
+  } catch (error) {
+    console.error('Error updating seller status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};

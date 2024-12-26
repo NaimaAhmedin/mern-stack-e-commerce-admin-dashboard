@@ -8,9 +8,9 @@ import {
   Input
 } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import axios from 'axios';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom';
+import { createPromotion } from '../../services/promotionService';
 
 const { RangePicker } = DatePicker;
 
@@ -18,59 +18,62 @@ const CreatePromotion = () => {
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
   const navigate = useNavigate();
 
   // Handle file upload
   const handleFileChange = ({ fileList }) => {
     setFileList(fileList);
-  };
-
-  // Convert file to base64
-  const getBase64 = (file) => {
-    return new Promise((resolve, reject) => {
+    
+    // Create image preview
+    if (fileList.length > 0) {
+      const file = fileList[0].originFileObj;
       const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
+    } else {
+      setImagePreview(null);
+    }
   };
 
   // Submit form
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // Get token from local storage
-      const token = localStorage.getItem('token');
-      console.log('Token:', token);  // Log the token for debugging
+      // Validate file is uploaded
+      if (fileList.length === 0) {
+        message.error('Please upload an image');
+        setLoading(false);
+        return;
+      }
 
-      // Convert image to base64
-      const imageBase64 = await getBase64(fileList[0].originFileObj);
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('image', fileList[0].originFileObj);
+      formData.append('startDate', values.dateRange[0].toISOString());
+      formData.append('endDate', values.dateRange[1].toISOString());
+      
+      // Add optional link
+      if (values.link) {
+        formData.append('link', values.link);
+      }
 
-      // Prepare promotion data
-      const promotionData = {
-        image: imageBase64,
-        startDate: values.dateRange[0].toISOString(),
-        endDate: values.dateRange[1].toISOString(),
-        link: values.link || '' // Add optional link
-      };
-
-      console.log('Promotion Data:', promotionData);  // Log the promotion data
-
-      // Send API request with Authorization header
-      const response = await axios.post('/api/promotions', promotionData, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Create promotion
+      const response = await createPromotion(formData);
 
       // Success handling
-      message.success('Promotion created successfully!', 1, () => {
-        navigate('/Content-Admin/Promotion');
-      });
+      if (response.success) {
+        message.success('Promotion created successfully!', 1, () => {
+          navigate('/Content-Admin/Promotion');
+        });
+      } else {
+        throw new Error(response.message || 'Failed to create promotion');
+      }
     } catch (error) {
       console.error('Promotion Creation Error:', error);
-      console.error('Error Response:', error.response);  // Log full error response
-      message.error(error.response?.data?.message || 'Failed to create promotion');
+      message.error(error.message || 'Failed to create promotion');
     } finally {
       setLoading(false);
     }
@@ -102,6 +105,21 @@ const CreatePromotion = () => {
               Click to Upload
             </Button>
           </Upload>
+          
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="mt-4">
+              <img 
+                src={imagePreview} 
+                alt="Promotion Preview" 
+                className="w-full h-48 object-cover rounded-lg"
+                onError={(e) => {
+                  e.target.src = '/default-promotion.png'; // Fallback image
+                  console.warn('Failed to load promotion image preview');
+                }}
+              />
+            </div>
+          )}
         </Form.Item>
 
         <Form.Item

@@ -2,8 +2,14 @@ const mongoose = require('mongoose');
 
 const promotionSchema = new mongoose.Schema({
     image: {
-        type: String,
-        required: [true, 'Promotion image is required']
+        public_id: {
+            type: String,
+            required: [true, 'Cloudinary public ID is required']
+        },
+        url: {
+            type: String,
+            required: [true, 'Cloudinary image URL is required']
+        }
     },
     link: { 
         type: String, 

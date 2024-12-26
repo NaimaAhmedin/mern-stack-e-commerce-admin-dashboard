@@ -1,6 +1,14 @@
 const Category = require('../Models/categoryModel'); // Import the Category model
 const Subcategory = require('../Models/subcategoryModel'); // Import the Subcategory model
 const path = require('path');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Get all categories with their subcategories
 exports.getAllCategories = async (req, res) => {
@@ -66,9 +74,6 @@ exports.getCategoryById = async (req, res) => {
 // Create a new category
 exports.createCategory = async (req, res) => {
   try {
-    console.log("Request Body:", req.body);
-    console.log("Uploaded File:", req.file); // Log uploaded image file
-
     const { name } = req.body;
 
     // Validate that both name and image are provided
@@ -76,13 +81,34 @@ exports.createCategory = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Name and image are required.' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;  // Image URL from file upload
-    const newCategory = await Category.create({ name, image: imageUrl });
+    // Upload image to Cloudinary
+    const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'categories',
+      transformation: [
+        { width: 500, height: 500, crop: 'limit' },
+        { quality: 'auto' }
+      ]
+    });
 
-    res.status(201).json({ success: true, data: newCategory });
+    const newCategory = await Category.create({ 
+      name, 
+      image: {
+        public_id: cloudinaryResponse.public_id,
+        url: cloudinaryResponse.secure_url
+      }
+    });
+
+    res.status(201).json({ 
+      success: true, 
+      data: newCategory 
+    });
   } catch (error) {
-    console.error("Error in createCategory:", error);  // Log the error for debugging
-    res.status(500).json({ success: false, message: 'Internal server error.' });
+    console.error("Error in createCategory:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error.',
+      error: error.message 
+    });
   }
 };
 
@@ -90,19 +116,7 @@ exports.createCategory = async (req, res) => {
 exports.updateCategory = async (req, res) => {
   try {
     const { name } = req.body;
-    const updateData = { name };
-
-    // Only update image if a new file was uploaded
-    if (req.file) {
-      const imageUrl = `/uploads/${req.file.filename}`;
-      updateData.image = imageUrl;
-    }
-
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
+    const category = await Category.findById(req.params.id);
 
     if (!category) {
       return res.status(404).json({ 
@@ -110,6 +124,33 @@ exports.updateCategory = async (req, res) => {
         message: 'Category not found' 
       });
     }
+
+    // Update name
+    category.name = name || category.name;
+
+    // Update image if a new file was uploaded
+    if (req.file) {
+      // Delete existing image from Cloudinary if it exists
+      if (category.image && category.image.public_id) {
+        await cloudinary.uploader.destroy(category.image.public_id);
+      }
+
+      // Upload new image to Cloudinary
+      const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'categories',
+        transformation: [
+          { width: 500, height: 500, crop: 'limit' },
+          { quality: 'auto' }
+        ]
+      });
+
+      category.image = {
+        public_id: cloudinaryResponse.public_id,
+        url: cloudinaryResponse.secure_url
+      };
+    }
+
+    await category.save();
 
     const subcategories = await Subcategory.find({ categoryId: category._id });
     const categoryWithSubs = {
@@ -140,14 +181,26 @@ exports.deleteCategory = async (req, res) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
+    // Delete image from Cloudinary if it exists
+    if (category.image && category.image.public_id) {
+      await cloudinary.uploader.destroy(category.image.public_id);
+    }
+
     // Delete all subcategories of this category
     await Subcategory.deleteMany({ categoryId: category._id });
 
     // Delete the category
     await category.deleteOne();
 
-    res.status(200).json({ message: 'Category and its subcategories deleted successfully' });
+    res.status(200).json({ 
+      success: true,
+      message: 'Category and its subcategories deleted successfully' 
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting category', error });
+    res.status(500).json({ 
+      success: false,
+      message: 'Error deleting category', 
+      error: error.message 
+    });
   }
 };

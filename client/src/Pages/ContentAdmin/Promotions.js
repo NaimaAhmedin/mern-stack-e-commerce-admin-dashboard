@@ -102,11 +102,37 @@ const Promotions = () => {
       dataIndex: 'image',
       key: 'image',
       render: (image) => (
-        <img 
-          src={image} 
-          alt="Promotion" 
-          style={{ width: 100, height: 50, objectFit: 'cover' }} 
-        />
+        image?.url ? (
+          <img 
+            src={image.url} 
+            alt="Promotion" 
+            style={{ 
+              width: 100, 
+              height: 50, 
+              objectFit: 'cover', 
+              borderRadius: 4,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
+            }} 
+          />
+        ) : (
+          <div 
+            style={{ 
+              width: 100, 
+              height: 50, 
+              backgroundColor: '#f0f2f5', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              borderRadius: 4,
+              color: '#8c8c8c',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              border: '1px dashed #d9d9d9'
+            }}
+          >
+            No Image
+          </div>
+        )
       )
     },
     {

@@ -6,7 +6,9 @@ const {
   updateUserByAdmin, 
   deleteUserByAdmin,
   getAdminsByRole,
-  getAllAdmins
+  getAllAdmins,
+  getAllSellers,
+  updateSellerStatus  
 } = require('../controller/userController');
 const { protect } = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
@@ -27,6 +29,20 @@ router.get('/admins/:role',
   protect, 
   roleMiddleware(['SuperAdmin']), 
   getAdminsByRole
+);
+
+// Sellers Route
+router.get('/sellers', 
+  protect, 
+  roleMiddleware(['SuperAdmin', 'ContentAdmin']), 
+  getAllSellers
+);
+
+// New route for updating seller status
+router.patch('/users/sellers/:id/status', 
+  protect, 
+  roleMiddleware(['SuperAdmin', 'ContentAdmin']), 
+  updateSellerStatus
 );
 
 router.get('/users', 

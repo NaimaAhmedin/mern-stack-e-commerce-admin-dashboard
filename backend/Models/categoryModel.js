@@ -1,15 +1,34 @@
 const mongoose = require('mongoose');
 
 const categorySchema = new mongoose.Schema({
-    name: { 
-        type: String, 
-        required: true 
+  name: {
+    type: String,
+    required: [true, 'Category name is required'],
+    trim: true,
+    unique: true,
+    maxlength: [50, 'Category name cannot exceed 50 characters']
+  },
+  image: {
+    public_id: {
+      type: String,
+      required: [true, 'Category image public ID is required']
     },
-    image: { 
-        type: String,
-        required: true 
+    url: {
+      type: String,
+      required: [true, 'Category image URL is required']
     }
-}, 
-{ timestamps: true });
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  }
+}, { 
+  timestamps: true 
+});
 
-module.exports = mongoose.model('Category', categorySchema);
+// Ensure unique category names
+categorySchema.index({ name: 1 }, { unique: true });
+
+const Category = mongoose.model('Category', categorySchema);
+
+module.exports = Category;

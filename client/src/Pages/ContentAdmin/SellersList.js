@@ -1,50 +1,64 @@
 import React, { useState, useEffect } from 'react';
-
-const initialSellers = [
-  {
-    id: 1,
-    name: 'John Doe',
-    contactInfo: 'john.doe@example.com',
-    status: 'active',
-    approvedProducts: 12,
-    rejectedProducts: 2,
-    accountNumber: '123456789',
-    businessLicense: 'BL123456',
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    contactInfo: 'jane.smith@example.com',
-    status: 'suspended',
-    approvedProducts: 5,
-    rejectedProducts: 3,
-    accountNumber: '987654321',
-    businessLicense: 'BL987654',
-  },
-  // other sellers
-];
+import { getSellers, updateSellerStatus } from '../../services/sellerService';
 
 const SellersList = () => {
-  const [sellers, setSellers] = useState(initialSellers);
+  const [sellers, setSellers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ status: 'all' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const filteredSellers = initialSellers.filter((seller) => {
-      const matchesStatus = filters.status === 'all' || seller.status === filters.status;
-      const matchesSearch = seller.name.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesStatus && matchesSearch;
-    });
-    setSellers(filteredSellers);
+    const fetchSellers = async () => {
+      try {
+        setIsLoading(true);
+        const queryFilters = filters.status !== 'all' 
+          ? { 'sellerDetails.status': filters.status } 
+          : {};
+
+        const response = await getSellers(queryFilters);
+        const sellersData = response.data.map(seller => ({
+          id: seller._id,
+          name: `${seller.firstName} ${seller.lastName}`.trim(),
+          contactInfo: seller.email,
+          phone: seller.phone,
+          status: seller.sellerDetails?.status || 'active',
+          businessLicense: seller.sellerDetails?.businessLicense || 'N/A',
+          address: seller.address ? 
+            `${seller.address.street}, ${seller.address.city}, ${seller.address.state}` 
+            : 'N/A'
+        }));
+
+        setSellers(
+          sellersData.filter(seller => 
+            seller.name.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        );
+        setIsLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setIsLoading(false);
+      }
+    };
+
+    fetchSellers();
   }, [searchTerm, filters]);
 
-  const handleStatusChange = (id, newStatus) => {
-    setSellers((prevSellers) =>
-      prevSellers.map((seller) =>
-        seller.id === id ? { ...seller, status: newStatus } : seller
-      )
-    );
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      await updateSellerStatus(id, newStatus);
+      setSellers(prevSellers => 
+        prevSellers.map(seller => 
+          seller.id === id ? { ...seller, status: newStatus } : seller
+        )
+      );
+    } catch (err) {
+      console.error('Failed to update seller status:', err);
+    }
   };
+
+  if (isLoading) return <div>Loading sellers...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="p-6">
@@ -66,7 +80,6 @@ const SellersList = () => {
           <option value="all">All Statuses</option>
           <option value="active">Active</option>
           <option value="suspended">Suspended</option>
-          <option value="pending">Pending</option>
         </select>
       </div>
 
@@ -76,11 +89,10 @@ const SellersList = () => {
             <tr>
               <th className="px-2 py-2 border-b font-semibold text-left">Name</th>
               <th className="px-2 py-2 border-b font-semibold text-left">Contact Info</th>
+              <th className="px-2 py-2 border-b font-semibold text-left">Phone</th>
               <th className="px-2 py-2 border-b font-semibold text-left">Status</th>
-              <th className="px-2 py-2 border-b font-semibold text-left">Approved Products</th>
-              <th className="px-2 py-2 border-b font-semibold text-left">Rejected Products</th>
-              <th className="px-2 py-2 border-b font-semibold text-left">Account Number</th>
               <th className="px-2 py-2 border-b font-semibold text-left">Business License</th>
+              <th className="px-2 py-2 border-b font-semibold text-left">Address</th>
             </tr>
           </thead>
           <tbody>
@@ -88,6 +100,7 @@ const SellersList = () => {
               <tr key={seller.id} className="border-t hover:bg-gray-100">
                 <td className="px-2 py-2 border-b">{seller.name}</td>
                 <td className="px-2 py-2 border-b">{seller.contactInfo}</td>
+                <td className="px-2 py-2 border-b">{seller.phone}</td>
                 <td className="px-2 py-2 border-b">
                   <select
                     value={seller.status}
@@ -96,13 +109,10 @@ const SellersList = () => {
                   >
                     <option value="active">Active</option>
                     <option value="suspended">Suspended</option>
-                    <option value="pending">Pending</option>
                   </select>
                 </td>
-                <td className="px-4 py-2 border-b">{seller.approvedProducts}</td>
-                <td className="px-4 py-2 border-b">{seller.rejectedProducts}</td>
-                <td className="px-4 py-2 border-b">{seller.accountNumber}</td>
                 <td className="px-4 py-2 border-b">{seller.businessLicense}</td>
+                <td className="px-4 py-2 border-b">{seller.address}</td>
               </tr>
             ))}
           </tbody>

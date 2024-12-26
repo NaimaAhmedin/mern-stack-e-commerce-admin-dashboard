@@ -253,10 +253,14 @@ const CategoryList = () => {
                     />
                   </td>
                   <td className="p-4">
-                    <img
-                      src={category.image}
-                      alt={category.name}
+                    <img 
+                      src={category.image?.url || '/default-category.png'} 
+                      alt={category.name} 
                       className="w-10 h-10 object-cover rounded-full"
+                      onError={(e) => {
+                        e.target.src = '/default-category.png'; // Fallback image
+                        console.warn(`Failed to load image for category: ${category.name}`);
+                      }}
                     />
                   </td>
                   <td className="p-4">

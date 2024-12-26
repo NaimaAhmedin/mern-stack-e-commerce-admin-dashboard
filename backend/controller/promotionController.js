@@ -1,5 +1,13 @@
-const Promotion = require('../models/promotionModel');
+const Promotion = require('../Models/promotionModel');
 const asyncHandler = require('express-async-handler');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // @desc    Create a new promotion
 // @route   POST /api/promotions
@@ -7,15 +15,34 @@ const asyncHandler = require('express-async-handler');
 exports.createPromotion = asyncHandler(async (req, res) => {
   try {
     const { 
-      image, 
       startDate, 
       endDate,
       link 
     } = req.body;
 
+    // Check if image is uploaded
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Promotion image is required'
+      });
+    }
+
+    // Upload image to Cloudinary
+    const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'promotions',
+      transformation: [
+        { width: 1200, height: 630, crop: 'limit' },
+        { quality: 'auto' }
+      ]
+    });
+
     // Create promotion
     const promotion = await Promotion.create({
-      image,
+      image: {
+        public_id: cloudinaryResponse.public_id,
+        url: cloudinaryResponse.secure_url
+      },
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       link: link || '',
@@ -92,7 +119,6 @@ exports.getPromotion = asyncHandler(async (req, res) => {
 exports.updatePromotion = asyncHandler(async (req, res) => {
   try {
     const { 
-      image, 
       startDate, 
       endDate,
       isActive,
@@ -109,11 +135,32 @@ exports.updatePromotion = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    promotion.image = image || promotion.image;
     promotion.startDate = startDate ? new Date(startDate) : promotion.startDate;
     promotion.endDate = endDate ? new Date(endDate) : promotion.endDate;
     promotion.isActive = isActive !== undefined ? isActive : promotion.isActive;
     promotion.link = link !== undefined ? link : promotion.link;
+
+    // Update image if a new file is uploaded
+    if (req.file) {
+      // Delete existing image from Cloudinary if it exists
+      if (promotion.image && promotion.image.public_id) {
+        await cloudinary.uploader.destroy(promotion.image.public_id);
+      }
+
+      // Upload new image to Cloudinary
+      const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'promotions',
+        transformation: [
+          { width: 1200, height: 630, crop: 'limit' },
+          { quality: 'auto' }
+        ]
+      });
+
+      promotion.image = {
+        public_id: cloudinaryResponse.public_id,
+        url: cloudinaryResponse.secure_url
+      };
+    }
 
     await promotion.save();
 
@@ -135,7 +182,7 @@ exports.updatePromotion = asyncHandler(async (req, res) => {
 // @access  Private (Content Admin)
 exports.deletePromotion = asyncHandler(async (req, res) => {
   try {
-    const promotion = await Promotion.findByIdAndDelete(req.params.id);
+    const promotion = await Promotion.findById(req.params.id);
 
     if (!promotion) {
       return res.status(404).json({
@@ -143,6 +190,14 @@ exports.deletePromotion = asyncHandler(async (req, res) => {
         message: 'Promotion not found'
       });
     }
+
+    // Delete image from Cloudinary
+    if (promotion.image && promotion.image.public_id) {
+      await cloudinary.uploader.destroy(promotion.image.public_id);
+    }
+
+    // Delete the promotion
+    await promotion.deleteOne();
 
     res.status(200).json({
       success: true,
