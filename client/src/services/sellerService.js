@@ -38,11 +38,7 @@ export const updateSellerStatus = async (sellerId, newStatus) => {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },
-    body: JSON.stringify({ 
-      sellerDetails: {
-        status: newStatus 
-      }
-    })
+    body: JSON.stringify({ status: newStatus })
   });
 
   if (!response.ok) {
@@ -53,20 +49,42 @@ export const updateSellerStatus = async (sellerId, newStatus) => {
   return await response.json();
 };
 
-// Fetch a single seller by ID
-export const getSeller = async (id) => {
+// Update seller approval
+export const updateSellerApproval = async (sellerId, newApproval) => {
   const token = localStorage.getItem('token');
-  const response = await fetch(`${API_URL}/${id}`, {
-    method: "GET",
+  
+  const response = await fetch(`/api/users/users/sellers/${sellerId}/approval`, {
+    method: "PATCH",
     headers: { 
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}`
     },
+    body: JSON.stringify({ approval: newApproval })
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to fetch seller details");
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to update seller approval");
+  }
+
+  return await response.json();
+};
+
+// Fetch a single seller by ID
+export const getSeller = async (id) => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`/api/users/users/${id}`, {
+    method: "GET",
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to fetch seller details");
   }
 
   return await response.json();

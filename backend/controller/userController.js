@@ -15,7 +15,7 @@ exports.getUserProfile = async (req, res, next) => {
 
 // Update User Profile
 exports.updateUserProfile = async (req, res, next) => {
-  const { username, email, password } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     const user = await User.findById(req.user.id);
@@ -25,7 +25,7 @@ exports.updateUserProfile = async (req, res, next) => {
     }
 
     // Update fields if provided
-    if (username) user.username = username;
+    if (name) user.name = name;
     if (email) user.email = email;
     if (password) user.password = password;
 
@@ -35,7 +35,7 @@ exports.updateUserProfile = async (req, res, next) => {
       success: true,
       data: {
         id: user._id,
-        username: user.username,
+        name: user.name,
         email: user.email,
       },
     });
@@ -95,7 +95,7 @@ exports.updateUserByAdmin = async (req, res, next) => {
     requestBody: req.body,
     requestUser: req.user ? {
       id: req.user._id,
-      userName: req.user.userName,
+      name: req.user.name,
       role: req.user.role
     } : 'No user in request'
   });
@@ -178,7 +178,7 @@ exports.updateUserByAdmin = async (req, res, next) => {
       success: true,
       data: {
         id: updatedUser._id,
-        userName: updatedUser.userName,
+        name: updatedUser.name,
         email: updatedUser.email,
         role: updatedUser.role
       }
@@ -246,7 +246,7 @@ exports.deleteUserByAdmin = async (req, res, next) => {
       message: 'Admin deleted successfully',
       deletedUser: {
         id: user._id,
-        userName: user.userName,
+        name: user.name,
         email: user.email,
         role: user.role
       }
@@ -318,6 +318,8 @@ exports.getAllSellers = async (req, res, next) => {
       ...req.query
     };
 
+    console.log('Query Object:', queryObj);
+
     // Remove special query parameters
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach(el => delete queryObj[el]);
@@ -347,11 +349,30 @@ exports.getAllSellers = async (req, res, next) => {
     const sellers = await query;
     const totalSellers = await User.countDocuments({ role: 'seller' });
 
+    console.log('Found Sellers:', sellers.length);
+    console.log('Total Sellers:', totalSellers);
+
+    const sellersData = sellers.map(seller => {
+      console.log('Individual Seller:', seller);
+      return {
+        _id: seller._id,
+        name: seller.name,
+        email: seller.email,
+        phone: seller.phone,
+        sellerDetails: {
+          status: seller.sellerDetails?.status || 'active',
+          approval: seller.sellerDetails?.approval || 'rejected'
+        }
+      };
+    });
+
+    console.log('Processed Sellers Data:', sellersData);
+
     res.status(200).json({
       status: 'success',
       results: sellers.length,
       totalSellers,
-      data: sellers
+      data: sellersData
     });
   } catch (error) {
     console.error('Error fetching sellers:', error);
@@ -366,7 +387,7 @@ exports.getAllSellers = async (req, res, next) => {
 // Add new method for updating seller status
 exports.updateSellerStatus = async (req, res, next) => {
   const { id } = req.params;
-  const { sellerDetails } = req.body;
+  const { status } = req.body;
 
   // Extensive logging for debugging
   console.log('Update Seller Status Request:', {
@@ -374,7 +395,7 @@ exports.updateSellerStatus = async (req, res, next) => {
     requestBody: req.body,
     requestUser: req.user ? {
       id: req.user._id,
-      userName: req.user.userName,
+      name: req.user.name,
       role: req.user.role
     } : 'No user in request'
   });
@@ -415,9 +436,9 @@ exports.updateSellerStatus = async (req, res, next) => {
 
     // Validate status
     const validStatuses = ['active', 'suspended'];
-    if (!validStatuses.includes(sellerDetails.status)) {
+    if (!validStatuses.includes(status)) {
       console.error('Status update failed: Invalid status', { 
-        providedStatus: sellerDetails.status,
+        providedStatus: status,
         validStatuses: validStatuses
       });
       return res.status(400).json({
@@ -426,14 +447,14 @@ exports.updateSellerStatus = async (req, res, next) => {
       });
     }
 
-    // Update seller status
-    user.sellerDetails.status = sellerDetails.status;
-    await user.save();
+    // Update user status
+    user.status = status;
+    await user.save({ validateBeforeSave: false });
 
     // Log successful status update
     console.log('Seller status updated successfully:', {
       sellerId: user._id,
-      newStatus: user.sellerDetails.status,
+      newStatus: user.status,
       updatedBy: req.user._id
     });
 
@@ -441,14 +462,81 @@ exports.updateSellerStatus = async (req, res, next) => {
       success: true,
       data: {
         id: user._id,
-        status: user.sellerDetails.status
+        status: user.status
       }
     });
   } catch (error) {
     console.error('Error updating seller status:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Internal server error',
+      errorDetails: error.message
+    });
+  }
+};
+
+// Update Seller Approval Status
+exports.updateSellerApproval = async (req, res, next) => {
+  const { id } = req.params;
+  const { approval } = req.body;
+
+  // Extensive logging for debugging
+  console.log('Update Seller Approval Request:', {
+    requestParams: req.params,
+    requestBody: req.body,
+    requestUser: req.user ? {
+      id: req.user._id,
+      name: req.user.name,
+      role: req.user.role
+    } : 'No user in request'
+  });
+
+  try {
+    // Verify the updating user is an admin
+    if (!req.user || !['SuperAdmin', 'ContentAdmin'].includes(req.user.role)) {
+      console.error('Approval update failed: Unauthorized access', { 
+        userRole: req.user ? req.user.role : 'No user' 
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Only SuperAdmin and ContentAdmin can update seller approval'
+      });
+    }
+
+    // Find the user and update the approval status
+    const user = await User.findByIdAndUpdate(
+      id, 
+      { 'sellerDetails.approval': approval }, 
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller not found'
+      });
+    }
+
+    console.log('Seller approval updated successfully:', {
+      sellerId: user._id,
+      newApproval: user.sellerDetails.approval
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Seller approval status updated successfully',
+      data: { 
+        id: user._id, 
+        name: user.name, 
+        approval: user.sellerDetails.approval 
+      }
+    });
+  } catch (error) {
+    console.error('Error updating seller approval:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update seller approval',
+      error: error.message
     });
   }
 };

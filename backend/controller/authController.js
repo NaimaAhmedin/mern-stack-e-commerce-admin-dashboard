@@ -4,13 +4,11 @@ const generateToken = require('../utils/generateToken');
 // Register User
 exports.registerUser = async (req, res, next) => {
   const { 
-    username, 
+    name, 
     email, 
     password, 
     confirmPassword, 
     role,
-    firstName = '',
-    lastName = '',
     phone = ''
   } = req.body;
 
@@ -28,13 +26,11 @@ exports.registerUser = async (req, res, next) => {
 
   try {
     const user = await User.create({
-      userName: username,
+      name,
       email,
       password,
       confirmPassword,
       role,
-      firstName,
-      lastName,
       phone
     });
 
@@ -43,10 +39,8 @@ exports.registerUser = async (req, res, next) => {
       token: generateToken(user._id),
       data: { 
         id: user._id, 
-        username: user.userName, 
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName
+        name: user.name, 
+        role: user.role
       },
     });
   } catch (error) {
@@ -68,7 +62,11 @@ exports.loginUser = async (req, res, next) => {
     res.status(200).json({
         success: true,
         token: generateToken(user._id, user.role),
-        data: { id: user._id, username: user.userName, role: user.role },
+        data: { 
+          id: user._id, 
+          name: user.name, 
+          role: user.role 
+        },
       });
       
   } catch (error) {
