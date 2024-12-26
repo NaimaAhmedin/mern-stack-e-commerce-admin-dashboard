@@ -1,4 +1,4 @@
-const User = require('../models/userSchema');
+const User = require('../Models/userSchema');
 
 // Get User Profile
 exports.getUserProfile = async (req, res, next) => {
@@ -314,21 +314,27 @@ exports.getAllSellers = async (req, res, next) => {
   try {
     // Construct query to find only sellers
     const queryObj = { 
-      role: 'seller',
-      ...req.query
+      role: 'seller'
     };
 
-    console.log('Query Object:', queryObj);
+    // Handle status filtering
+    if (req.query['sellerDetails.status'] && req.query['sellerDetails.status'] !== 'all') {
+      // Explicitly handle active status filtering
+      if (req.query['sellerDetails.status'] === 'active') {
+        queryObj.$or = [
+          { 'sellerDetails.status': 'active' },
+          { 'sellerDetails.status': { $exists: false } }
+        ];
+      } else {
+        // For other specific statuses
+        queryObj['sellerDetails.status'] = req.query['sellerDetails.status'];
+      }
+    } else {
+      // For 'all' status, remove any status filtering
+      delete queryObj['sellerDetails.status'];
+    }
 
-    // Remove special query parameters
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach(el => delete queryObj[el]);
-
-    // Advanced filtering
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
-    
-    let query = User.find(JSON.parse(queryStr)).select('-password');
+    let query = User.find(queryObj).select('-password');
 
     // Sorting
     if (req.query.sort) {
@@ -347,26 +353,31 @@ exports.getAllSellers = async (req, res, next) => {
 
     // Execute query
     const sellers = await query;
-    const totalSellers = await User.countDocuments({ role: 'seller' });
-
-    console.log('Found Sellers:', sellers.length);
-    console.log('Total Sellers:', totalSellers);
-
-    const sellersData = sellers.map(seller => {
-      console.log('Individual Seller:', seller);
-      return {
-        _id: seller._id,
-        name: seller.name,
-        email: seller.email,
-        phone: seller.phone,
-        sellerDetails: {
-          status: seller.sellerDetails?.status || 'active',
-          approval: seller.sellerDetails?.approval || 'rejected'
-        }
-      };
+    const totalSellers = await User.countDocuments({ 
+      role: 'seller', 
+      ...(req.query['sellerDetails.status'] && req.query['sellerDetails.status'] !== 'all' 
+        ? (req.query['sellerDetails.status'] === 'active'
+          ? { 
+              $or: [
+                { 'sellerDetails.status': 'active' },
+                { 'sellerDetails.status': { $exists: false } }
+              ]
+            }
+          : { 'sellerDetails.status': req.query['sellerDetails.status'] }
+        ) 
+        : {}) 
     });
 
-    console.log('Processed Sellers Data:', sellersData);
+    const sellersData = sellers.map(seller => ({
+      _id: seller._id,
+      name: seller.name,
+      email: seller.email,
+      phone: seller.phone,
+      sellerDetails: {
+        status: seller.sellerDetails?.status || 'active',
+        approval: seller.sellerDetails?.approval || 'rejected'
+      }
+    }));
 
     res.status(200).json({
       status: 'success',
@@ -448,13 +459,16 @@ exports.updateSellerStatus = async (req, res, next) => {
     }
 
     // Update user status
-    user.status = status;
+    if (!user.sellerDetails) {
+      user.sellerDetails = {};
+    }
+    user.sellerDetails.status = status;
     await user.save({ validateBeforeSave: false });
 
     // Log successful status update
     console.log('Seller status updated successfully:', {
       sellerId: user._id,
-      newStatus: user.status,
+      newStatus: user.sellerDetails.status,
       updatedBy: req.user._id
     });
 
@@ -462,7 +476,7 @@ exports.updateSellerStatus = async (req, res, next) => {
       success: true,
       data: {
         id: user._id,
-        status: user.status
+        status: user.sellerDetails.status
       }
     });
   } catch (error) {
