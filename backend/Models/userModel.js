@@ -68,7 +68,7 @@ const userSchema = new mongoose.Schema({
     },
     approval:{
       type:String,
-      enu:['approved','rejected'],
+      enum:['approved','rejected'],
       default:'rejected'
       
     }
