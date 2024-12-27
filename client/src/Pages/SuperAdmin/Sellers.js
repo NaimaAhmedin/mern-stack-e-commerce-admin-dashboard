@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import { Table, Button, Space, message, Popconfirm, Modal, Input, Select, Card, Tabs, Badge, Tooltip, Drawer, Rate, Statistic } from 'antd';
+=======
+import { Table, Button, Space, message, Popconfirm, Modal, Input, Select, Card, Tabs, Badge, Tooltip, Drawer, Rate, Statistic, Spin } from 'antd';
+>>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
 import { 
   FaUndo, 
   FaTrash, 
@@ -20,23 +24,33 @@ import {
   FaInfoCircle
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
 import { getSellers, updateSellerStatus } from '../../services/sellerService';
+=======
+import axios from 'axios';
+>>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
 
 const { Option } = Select;
 const { TabPane } = Tabs;
 
 const Sellers = () => {
   const [sellers, setSellers] = useState([]);
+<<<<<<< HEAD
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+=======
+  // const [users, setUsers] = useState([]);
+>>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
   const [penaltyModalVisible, setPenaltyModalVisible] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState(null);
   const [penaltyType, setPenaltyType] = useState('');
   const [penaltyAmount, setPenaltyAmount] = useState('');
   const [penaltyReason, setPenaltyReason] = useState('');
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+<<<<<<< HEAD
   useEffect(() => {
     const fetchSuspendedSellers = async () => {
       try {
@@ -75,6 +89,31 @@ const Sellers = () => {
       message.error('Failed to unsuspend seller');
       console.error(err);
     }
+=======
+// Fetch sellers from backend
+const fetchSellers = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get('/api/users/users/seller', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    setSellers(response.data.data);
+    setLoading(false);
+  } catch (error) {
+    message.error('Failed to fetch sellers list');
+    setLoading(false);
+  }
+};
+
+
+  const handleUnsuspendSeller = (id) => {
+    setSellers(sellers.map(seller =>
+      seller.id === id ? { ...seller, status: 'Active' } : seller
+    ));
+    message.success('Seller unsuspended successfully');
+>>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
   };
 
   const handleRemoveSeller = (id) => {
@@ -118,11 +157,33 @@ const Sellers = () => {
     setIsDrawerVisible(true);
   };
 
+<<<<<<< HEAD
+=======
+  const getStatusColor = (status) => {
+    const colors = {
+      'Delivered': '#43A047',
+      'Processing': '#1A3C9C',
+      'Pending': '#FFA000',
+      'Cancelled': '#E53935'
+    };
+    return colors[status] || '#666';
+  };
+
+  const formatCurrency = (value) => {
+    return `${value.toFixed(2)} Birr`;
+  };
+
+   // Fetch users on component mount
+  useEffect(() => {
+    fetchSellers();
+  }, []);
+
+>>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
   const columns = [
     {
       title: 'Seller Name',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'username',
+      key: 'username',
       render: (text, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FaUserTie style={{ color: '#1A3C9C' }} />
@@ -144,6 +205,7 @@ const Sellers = () => {
         </div>
       ),
     },
+<<<<<<< HEAD
     {
       title: 'Address',
       dataIndex: 'address',
@@ -155,6 +217,36 @@ const Sellers = () => {
         </div>
       ),
     },
+=======
+    // {
+    //   title: 'Performance',
+    //   key: 'performance',
+    //   render: (_, record) => (
+    //     <Space direction="vertical" size="small">
+    //       <div>
+    //         <Badge 
+    //           count={`${record.performanceMetrics.orderCompletion}%`} 
+    //           style={{ 
+    //             backgroundColor: '#1A3C9C',
+    //             fontSize: '12px'
+    //           }} 
+    //         />
+    //         <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>Completion Rate</span>
+    //       </div>
+    //       <div>
+    //         <Badge 
+    //           count={`${record.totalProducts}`} 
+    //           style={{ 
+    //             backgroundColor: '#0288D1',
+    //             fontSize: '12px'
+    //           }} 
+    //         />
+    //         <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>Products</span>
+    //       </div>
+    //     </Space>
+    //   ),
+    // },
+>>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
     {
       title: 'Business License',
       dataIndex: 'businessLicense',
@@ -307,8 +399,23 @@ const Sellers = () => {
     />
   );
 
+<<<<<<< HEAD
   if (isLoading) return <div>Loading suspended sellers...</div>;
   if (error) return <div>Error: {error}</div>;
+=======
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+>>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
 
   return (
     <div style={{ padding: '20px', background: '#f4f6f9', minHeight: '100vh' }}>

@@ -64,7 +64,7 @@ exports.getAllProducts = async (req, res) => {
     const products = await Product.find(query)
       .populate('categoryId', 'name')
       .populate('subcategoryId', 'name')
-      .populate('seller_id', 'name email'); // Optionally populate seller details
+      .populate('seller_id', 'username'); // Optionally populate seller details
 
     console.log('Found products:', products); // Debug found products
 

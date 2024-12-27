@@ -8,7 +8,8 @@ const {
   getAdminsByRole,
   getAllAdmins,
   getAllSellers,
-  updateSellerStatus  
+  updateSellerStatus,
+  getUsersByRole
 } = require('../controller/userController');
 const { protect } = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
@@ -49,6 +50,12 @@ router.get('/users',
   protect, 
   roleMiddleware(['SuperAdmin']), 
   getAllUsers
+);
+
+router.get('/users/:role', 
+  protect, 
+  roleMiddleware(['SuperAdmin', 'DeliveryAdmin','ContentAdmin']), 
+  getUsersByRole
 );
 
 router.get('/users/:id', 

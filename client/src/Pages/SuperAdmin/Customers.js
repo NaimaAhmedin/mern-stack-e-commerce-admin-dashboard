@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Table, Button, Space, Modal, message, Card, Tabs, Badge, Tooltip, Drawer } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Space, Modal, message, Card, Tabs, Badge, Tooltip, Drawer, Spin } from 'antd';
 import { 
   FaBan, 
   FaUndo, 
@@ -15,54 +15,55 @@ import {
   FaCalendarAlt
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom'; 
+import axios from 'axios';
 
 const { TabPane } = Tabs;
 
 const Customers = () => {
   const [users, setUsers] = useState([
-    { 
-      id: 1, 
-      name: 'John Doe', 
-      email: 'johndoe@example.com', 
-      status: 'Active',
-      phone: '+1 (555) 123-4567',
-      address: '123 Main St, New York, NY 10001',
-      joinDate: '2023-01-15',
-      totalOrders: 25,
-      recentOrders: [
-        { id: 1, date: '2024-01-10', amount: 150.00, status: 'Delivered' },
-        { id: 2, date: '2024-01-05', amount: 89.99, status: 'Processing' },
-        { id: 3, date: '2023-12-28', amount: 299.99, status: 'Delivered' },
-      ]
-    },
-    { 
-      id: 2, 
-      name: 'Jane Smith', 
-      email: 'janesmith@example.com', 
-      status: 'Active',
-      phone: '+1 (555) 987-6543',
-      address: '456 Oak Ave, Los Angeles, CA 90001',
-      joinDate: '2023-03-20',
-      totalOrders: 18,
-      recentOrders: [
-        { id: 4, date: '2024-01-08', amount: 199.99, status: 'Delivered' },
-        { id: 5, date: '2023-12-30', amount: 75.50, status: 'Delivered' },
-      ]
-    },
-    { 
-      id: 3, 
-      name: 'Robert Brown', 
-      email: 'robertbrown@example.com', 
-      status: 'Suspended',
-      phone: '+1 (555) 246-8135',
-      address: '789 Pine St, Chicago, IL 60601',
-      joinDate: '2023-06-10',
-      totalOrders: 12,
-      recentOrders: [
-        { id: 6, date: '2023-12-15', amount: 129.99, status: 'Delivered' },
-        { id: 7, date: '2023-12-01', amount: 45.99, status: 'Delivered' },
-      ]
-    },
+    // { 
+    //   id: 1, 
+    //   name: 'John Doe', 
+    //   email: 'johndoe@example.com', 
+    //   status: 'Active',
+    //   phone: '+1 (555) 123-4567',
+    //   address: '123 Main St, New York, NY 10001',
+    //   joinDate: '2023-01-15',
+    //   totalOrders: 25,
+    //   recentOrders: [
+    //     { id: 1, date: '2024-01-10', amount: 150.00, status: 'Delivered' },
+    //     { id: 2, date: '2024-01-05', amount: 89.99, status: 'Processing' },
+    //     { id: 3, date: '2023-12-28', amount: 299.99, status: 'Delivered' },
+    //   ]
+    // },
+    // { 
+    //   id: 2, 
+    //   name: 'Jane Smith', 
+    //   email: 'janesmith@example.com', 
+    //   status: 'Active',
+    //   phone: '+1 (555) 987-6543',
+    //   address: '456 Oak Ave, Los Angeles, CA 90001',
+    //   joinDate: '2023-03-20',
+    //   totalOrders: 18,
+    //   recentOrders: [
+    //     { id: 4, date: '2024-01-08', amount: 199.99, status: 'Delivered' },
+    //     { id: 5, date: '2023-12-30', amount: 75.50, status: 'Delivered' },
+    //   ]
+    // },
+    // { 
+    //   id: 3, 
+    //   name: 'Robert Brown', 
+    //   email: 'robertbrown@example.com', 
+    //   status: 'Suspended',
+    //   phone: '+1 (555) 246-8135',
+    //   address: '789 Pine St, Chicago, IL 60601',
+    //   joinDate: '2023-06-10',
+    //   totalOrders: 12,
+    //   recentOrders: [
+    //     { id: 6, date: '2023-12-15', amount: 129.99, status: 'Delivered' },
+    //     { id: 7, date: '2023-12-01', amount: 45.99, status: 'Delivered' },
+    //   ]
+    // },
   ]);
   
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -70,7 +71,26 @@ const Customers = () => {
   const [actionType, setActionType] = useState('');
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Fetch customers from backend
+  const fetchCustomers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/users/users/Customer', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setUsers(response.data.data);
+      setLoading(false);
+    } catch (error) {
+      message.error('Failed to fetch customer list');
+      setLoading(false);
+    }
+  };
+
 
   const handleSuspendUser = (id) => {
     const user = users.find(user => user.id === id);
@@ -176,6 +196,11 @@ const Customers = () => {
       />
     );
   };
+
+ // Fetch users on component mount
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
   const columns = [
     {
@@ -309,6 +334,19 @@ const Customers = () => {
       ),
     },
   ];
+
+if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '20px', background: '#f4f6f9', minHeight: '100vh' }}>

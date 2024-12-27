@@ -10,6 +10,7 @@ import Pendingorders from '../../Pages/DeliveryAdmin/Pendingorders';
 import Processingorders from '../../Pages/DeliveryAdmin/Processingorders';
 import Deliveredorders from '../../Pages/DeliveryAdmin/Deliveredorders';
 import FailedOrders from '../../Pages/DeliveryAdmin/FailedOrders'; 
+import DelivererList from '../../Pages/DeliveryAdmin/DelivererList';
 const DeliveryAdminRoutes = () => {
   return [
     <Route path="/DeliveryAdmin" element={<DeliveryAdminMainLayout />} key="DeliveryAdminMainLayout">
@@ -21,7 +22,7 @@ const DeliveryAdminRoutes = () => {
       <Route path='ProcessingOrders' element={<Processingorders/>}/>
       <Route path="DeliveredOrders" element={<Deliveredorders />} />
       <Route path='failedOrders' element={<FailedOrders/>}/>
-      <Route path='Personnel-List' element={<Deliverer/>}/>
+      <Route path='Personnel-List' element={<DelivererList/>}/>
       <Route path='complaints' element={<CustomerComplaints/>}/>
       <Route path="settings/profile" element={<Profile />} />
     </Route>

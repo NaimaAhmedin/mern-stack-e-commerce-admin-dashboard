@@ -22,7 +22,7 @@ router.put(
 router.delete(
   '/:id', 
   protect, 
-  restrictTo('seller','admin'),
+  restrictTo('seller','admin', 'ContentAdmin'),
   productController.deleteProduct
 );
 
