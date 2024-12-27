@@ -10,19 +10,19 @@ router.get('/:id', protect, productController.getProductById);
 router.post(
   '/',
   protect,
-  restrictTo('seller', 'admin'),
+  restrictTo('seller'),
   productController.createProduct 
 );
 router.put(
   '/:id', 
   protect, 
-  restrictTo('seller', 'admin'),
+  restrictTo('seller'),
   productController.updateProduct
 );
 router.delete(
   '/:id', 
   protect, 
-  restrictTo('seller','admin', 'ContentAdmin'),
+  restrictTo('seller', 'ContentAdmin'),
   productController.deleteProduct
 );
 
