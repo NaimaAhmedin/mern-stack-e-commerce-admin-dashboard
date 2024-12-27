@@ -24,8 +24,13 @@ const API_URL = '/api/routes/products'; // Uses proxy to direct requests to the 
 export const getProducts = async () => {
   try {
     const token = localStorage.getItem("token");
-    console.log('Token:', token); // Debug token
 
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    console.log('Token:', token); // Debug token
+ 
     const response = await fetch(API_URL, {
       method: "GET",
       headers: { 

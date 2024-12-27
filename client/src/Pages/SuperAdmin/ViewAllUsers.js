@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   Card, 
@@ -11,6 +11,7 @@ import {
   Drawer, 
   Tabs, 
   Statistic, 
+  Spin,
   Rate 
 } from 'antd';
 import { 
@@ -28,74 +29,37 @@ import {
   FaBox
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-
+import axios from 'axios';
 const { TabPane } = Tabs;
 
 const ViewAllUsers = () => {
-  const [users, setUsers] = useState([
-    { 
-      id: 1, 
-      name: 'John Doe', 
-      email: 'johndoe@example.com', 
-      phone: '+1 (555) 123-4567',
-      role: 'Customer',
-      status: 'Active',
-      address: '123 Main Street, Anytown, USA',
-      joinDate: '2023-01-15',
-      totalOrders: 25,
-      totalSpent: 5000,
-      recentOrders: [
-        { id: 1, date: '2024-01-10', product: 'Smartphone X', amount: 999.99, status: 'Delivered' },
-        { id: 2, date: '2024-01-05', product: 'Laptop Pro', amount: 1499.99, status: 'Processing' },
-        { id: 3, date: '2023-12-28', product: 'Wireless Earbuds', amount: 199.99, status: 'Delivered' },
-      ],
-      performanceMetrics: {
-        averageOrderValue: 200,
-        returnRate: 5,
-        satisfactionScore: 4.5
-      }
-    },
-    { 
-      id: 2, 
-      name: 'Jane Smith', 
-      email: 'janesmith@example.com', 
-      phone: '+1 (555) 987-6543',
-      role: 'Seller',
-      status: 'Suspended',
-      address: '456 Business Ave, Tech City, CA',
-      joinDate: '2023-02-20',
-      totalOrders: 50,
-      totalSales: 25000,
-      recentSales: [
-        { id: 4, date: '2024-01-09', product: 'Designer Dress', amount: 299.99, status: 'Delivered' },
-        { id: 5, date: '2024-01-03', product: 'Luxury Handbag', amount: 899.99, status: 'Delivered' },
-      ],
-      performanceMetrics: {
-        monthlyRevenue: 5000,
-        orderCompletion: 98,
-        customerSatisfaction: 4.8
-      }
-    },
-    { 
-      id: 3, 
-      name: 'Admin User', 
-      email: 'admin@example.com', 
-      phone: '+1 (555) 246-8135',
-      role: 'Super Admin',
-      status: 'Active',
-      address: '789 Admin Street, Management City, NY',
-      joinDate: '2022-06-01',
-      performanceMetrics: {
-        systemUptime: 99.9,
-        totalSystemUsers: 1000,
-        activeAdmins: 5
-      }
-    },
-  ]);
-
+  const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  // Fetch users from backend
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/users/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setUsers(response.data.data);
+      setLoading(false);
+    } catch (error) {
+      message.error('Failed to fetch users list');
+      setLoading(false);
+    }
+  };
+
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const formatCurrency = (value) => {
     return `${value.toFixed(2)} Birr`;
@@ -254,6 +218,19 @@ const ViewAllUsers = () => {
       pagination={false}
     />
   );
+
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '20px', background: '#f4f6f9', minHeight: '100vh' }}>

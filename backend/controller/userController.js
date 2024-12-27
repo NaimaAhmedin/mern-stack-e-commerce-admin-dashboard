@@ -64,8 +64,16 @@ exports.deleteUserAccount = async (req, res, next) => {
 // Get All Users (Admin Only)
 exports.getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('-password');
-    res.status(200).json({ success: true, data: users });
+    // Define user roles
+    const userRoles = ['seller', 'Customer'];
+
+    const users = await User.find({ role: { $in: userRoles } })
+    .select('-password') // Exclude password
+    .sort({ createdAt: -1 }); // Sort by most recent first;
+    res.status(200).json({ 
+      success: true, 
+      count: users.length,
+      data: users });
   } catch (error) {
     next(error);
   }
@@ -282,6 +290,38 @@ exports.getAdminsByRole = async (req, res, next) => {
       success: true,
       count: admins.length,
       data: admins
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// Get User by Role (users Only)
+exports.getUsersByRole = async (req, res, next) => {
+  const { role } = req.params;
+
+  // Define valid user roles (excluding admins)
+  const userRoles = ['seller', 'Customer', 'deliverer'];
+
+  try {
+    // Validate role
+    if (!userRoles.includes(role)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid role specified' 
+      });
+    }
+
+    // Find users with the specified role
+    const users = await User.find({ role })
+      .select('-password') // Exclude password
+      .sort({ createdAt: -1 }); // Sort by most recent first
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
     });
   } catch (error) {
     next(error);

@@ -6,6 +6,7 @@ const {
   updateUserByAdmin, 
   deleteUserByAdmin,
   getAdminsByRole,
+  getUsersByRole,
   getAllAdmins
 } = require('../controller/userController');
 const { protect } = require('../middlewares/authMiddleware');
@@ -33,6 +34,12 @@ router.get('/users',
   protect, 
   roleMiddleware(['SuperAdmin']), 
   getAllUsers
+);
+
+router.get('/users/:role', 
+  protect, 
+  roleMiddleware(['SuperAdmin', 'DeliveryAdmin','ContentAdmin']), 
+  getUsersByRole
 );
 
 router.get('/users/:id', 

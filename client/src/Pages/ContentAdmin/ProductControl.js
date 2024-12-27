@@ -1,403 +1,352 @@
-import React, { useState } from 'react';
-import { Table, Button, Modal, message,  } from 'antd';
-
-// const { Option } = Select;
-
-// Updated columns with new fields and modified stock & category filters
-const columns = (approveProduct, removeProduct, showProductDetails, filterCategory) => [
-  {
-    title: "SNo",
-    dataIndex: "key",
-    render: (text, record, index) => index + 1,
-  },
-  {
-    title: "Product ID",
-    dataIndex: "id",
-  },
-  {
-    title: "Name",
-    dataIndex: "name",
-  },
- 
-  {
-    title: "Category",
-    dataIndex: "category",
-    filters: [
-      { text: "Footwear", value: "Footwear" },
-      { text: "Clothing", value: "Clothing" },
-      { text: "Electronics", value: "Electronics" },
-      { text: "Home Appliance", value: "Home Appliance" },
-      { text: "Accessories", value: "Accessories" },
-    ],
-    onFilter: (value, record) => record.category.includes(value),
-  },
- 
-  {
-    title: "Price",
-    dataIndex: "price",
-    render: (price) => `$${price.toFixed(2)}`,
-  },
-  {
-    title: "Stock",
-    dataIndex: "stock",
-  },
-  {
-    title: "Rating",
-    dataIndex: "rating",
-    render: (rating) => `${rating} / 5`,
-  },
-  {
-    title: "Actions",
-    render: (_, record) => (
-      <div>
-        <Button 
-          onClick={() => approveProduct(record)} 
-          style={{ marginRight: '10px', backgroundColor: 'green', color: 'white' }}
-        >
-          Approve
-        </Button>
-        <Button 
-          onClick={() => removeProduct(record.key)} 
-          style={{ backgroundColor: 'red', color: 'white' }}
-        >
-          Remove
-        </Button>
-        <Button 
-          onClick={() => showProductDetails(record)} 
-          style={{ marginLeft: '10px', backgroundColor: '#007bff', color: 'white' }}
-        >
-          Details
-        </Button>
-      </div>
-    ),
-  },
-];
-
-// Updated sample data with more products and images
-const data1 = [
-  {
-    key: 0,
-    id: "P001",
-    name: "Running Shoes",
-    brand: "Nike",
-    category: "Footwear",
-    color: "Red",
-    price: 49.99,
-    stock: 15,
-    rating: 4.5,
-    warranty: 12,
-    description: "High-quality running shoes for daily workouts.",
-    image: "https://launches-media.endclothing.com/AQ1763-600_launches_hero_portrait_1.jpg"
-  },
-  {
-    key: 1,
-    id: "P002",
-    name: "Cotton T-Shirt",
-    brand: "Adidas",
-    category: "Clothing",
-    color: "Blue",
-    price: 19.99,
-    stock: 30,
-    rating: 3.8,
-    warranty: 6,
-    description: "Comfortable cotton T-shirt in various colors.",
-    image: "https://www.80scasualclassics.co.uk/images/adidas-originals-ess-t-shirt-deep-blue-p15587-85997_image.jpg"
-  },
-  {
-    key: 2,
-    id: "P003",
-    name: "Smartphone",
-    brand: "Samsung",
-    category: "Electronics",
-    color: "Black",
-    price: 299.99,
-    stock: 0,
-    rating: 4.2,
-    warranty: 24,
-    description: "Latest smartphone with advanced features.",
-    image: "https://th.bing.com/th/id/OIP.2dgnlgwui_l94zZyUthS-gHaIv?w=508&h=600&rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 3,
-    id: "P004",
-    name: "Vacuum Cleaner",
-    brand: "Dyson",
-    category: "Home Appliance",
-    color: "Gray",
-    price: 89.99,
-    stock: 8,
-    rating: 2.5,
-    warranty: 18,
-    description: "Powerful vacuum cleaner for effortless cleaning.",
-    image: "https://th.bing.com/th/id/OIP.db1WiNLMX5iZJWJGVCSHMgHaE8?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 4,
-    id: "P005",
-    name: "Leather Jacket",
-    brand: "Levi's",
-    category: "Clothing",
-    color: "Black",
-    price: 120.0,
-    stock: 5,
-    rating: 4.7,
-    warranty: 12,
-    description: "Premium leather jacket for stylish looks.",
-    image: "https://th.bing.com/th/id/OIP.r5Z5XK-O2RWnF8LS_KMUzgAAAA?w=474&h=726&rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 5,
-    id: "P006",
-    name: "Laptop",
-    brand: "Dell",
-    category: "Electronics",
-    color: "Silver",
-    price: 799.99,
-    stock: 10,
-    rating: 4.3,
-    warranty: 24,
-    description: "High-performance laptop for all your needs.",
-    image: "https://th.bing.com/th/id/OIP.upOHHLyQpVZImW-vGWM9ZwHaFY?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 6,
-    id: "P007",
-    name: "Headphones",
-    brand: "Sony",
-    category: "Electronics",
-    color: "Black",
-    price: 49.99,
-    stock: 20,
-    rating: 4.5,
-    warranty: 12,
-    description: "Noise-canceling headphones for immersive sound.",
-    image: "https://th.bing.com/th/id/OIP.akpF3DzW2omMrrAawWSl-gHaFY?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 7,
-    id: "P008",
-    name: "Microwave Oven",
-    brand: "Panasonic",
-    category: "Home Appliance",
-    color: "White",
-    price: 99.99,
-    stock: 15,
-    rating: 3.9,
-    warranty: 24,
-    description: "Convenient microwave oven for quick meals.",
-    image: "https://th.bing.com/th/id/R.dee1940112555e43cad67786f6f6fa83?rik=nlg4OUtJOyE9WQ&pid=ImgRaw&r=0"
-  },
-  {
-    key: 8,
-    id: "P009",
-    name: "Bluetooth Speaker",
-    brand: "JBL",
-    category: "Electronics",
-    color: "Blue",
-    price: 59.99,
-    stock: 25,
-    rating: 4.6,
-    warranty: 12,
-    description: "Portable Bluetooth speaker with great sound.",
-    image: "https://th.bing.com/th/id/OIP.fp_H7rXPXLBHuIWR5gAKLAHaHa?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 9,
-    id: "P010",
-    name: "Smartwatch",
-    brand: "Apple",
-    category: "Electronics",
-    color: "Black",
-    price: 199.99,
-    stock: 12,
-    rating: 4.8,
-    warranty: 12,
-    description: "Feature-rich smartwatch for daily use.",
-    image: "https://th.bing.com/th/id/OIP.Cs8c-5Uf4kyMV8T-8cnGFAHaFT?w=600&h=430&rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 10,
-    id: "P011",
-    name: "Coffee Maker",
-    brand: "Keurig",
-    category: "Home Appliance",
-    color: "Black",
-    price: 79.99,
-    stock: 10,
-    rating: 4.2,
-    warranty: 12,
-    description: "Quick and easy coffee maker for daily brews.",
-    image: "https://th.bing.com/th/id/OIP.54DwS8p5Dy_Maf5-pCFEFQAAAA?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 11,
-    id: "P012",
-    name: "Gaming Console",
-    brand: "Sony",
-    category: "Electronics",
-    color: "White",
-    price: 399.99,
-    stock: 8,
-    rating: 4.9,
-    warranty: 24,
-    description: "Next-gen gaming console with high performance.",
-    image: "https://th.bing.com/th/id/OIP.TQK42gp0mU_SmiQ4jUAUJQHaHa?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 12,
-    id: "P013",
-    name: "Blender",
-    brand: "NutriBullet",
-    category: "Home Appliance",
-    color: "Silver",
-    price: 49.99,
-    stock: 20,
-    rating: 3.5,
-    warranty: 6,
-    description: "Compact blender for smoothies and shakes.",
-    image: "https://th.bing.com/th/id/OIP.7lcNpkMF6L-l0liXeaq8_AAAAA?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 13,
-    id: "P014",
-    name: "Wristwatch",
-    brand: "Casio",
-    category: "Accessories",
-    color: "Silver",
-    price: 29.99,
-    stock: 50,
-    rating: 4.3,
-    warranty: 24,
-    description: "Durable wristwatch with stylish design.",
-    image: "https://th.bing.com/th/id/R.1131df6eeb5a8757af66a3034e6ee28b?rik=l8b2uUah1ENaUw&pid=ImgRaw&r=0"
-  },
-  {
-    key: 14,
-    id: "P015",
-    name: "Formal Shoes",
-    brand: "Clarks",
-    category: "Footwear",
-    color: "Brown",
-    price: 69.99,
-    stock: 20,
-    rating: 4.1,
-    warranty: 12,
-    description: "Comfortable and stylish formal shoes.",
-    image: "https://th.bing.com/th/id/OIP.b9ldHiIdZ33OXKEYijUIeQHaHa?rs=1&pid=ImgDetMain"
-  },
-  {
-    key: 15,
-    id: "P016",
-    name: "Tablet",
-    brand: "Lenovo",
-    category: "Electronics",
-    color: "Black",
-    price: 249.99,
-    stock: 14,
-    rating: 4.4,
-    warranty: 12,
-    description: "Lightweight tablet for entertainment and work.",
-    image: "https://i.ebayimg.com/images/g/Og0AAOSwD7ljYBr9/s-l1600.jpg"
-  },
-  {
-    key: 16,
-    id: "P017",
-    name: "Sunglasses",
-    brand: "Ray-Ban",
-    category: "Accessories",
-    color: "Black",
-    price: 89.99,
-    stock: 35,
-    rating: 4.7,
-    warranty: 6,
-    description: "Stylish sunglasses for sun protection.",
-    image: "https://th.bing.com/th/id/R.f6829ec5b8f74147ffa1d85487dcc170?rik=ssbxuoks%2fBnKSA&pid=ImgRaw&r=0"
-  },
-  {
-    key: 17,
-    id: "P018",
-    name: "Electric Kettle",
-    brand: "Philips",
-    category: "Home Appliance",
-    color: "Silver",
-    price: 29.99,
-    stock: 15,
-    rating: 3.9,
-    warranty: 12,
-    description: "Electric kettle for quick boiling.",
-    image: "https://th.bing.com/th/id/OIP.W_whh2_ETWV1UYOEGnOWhgHaHa?rs=1&pid=ImgDetMain"
-  },];
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Modal, message, Spin } from 'antd';
+import { useNavigate } from 'react-router-dom';
+import { MdSearch } from "react-icons/md";
+import { deleteProduct, getProducts } from '../../services/productService';
 
 const ProductControl = () => {
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [categoryFilters, setCategoryFilters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const fetchProducts = async () => {
+    try {
+      const response = await getProducts();
+      console.log('Products response:', response); // Debug response
 
-  const approveProduct = (product) => {
-    if (product.price < 20) {
-      message.error(`Product ${product.name} cannot be approved due to low price.`);
+      // Check if response has the expected structure
+      if (response && (Array.isArray(response) || Array.isArray(response.data))) {
+        const productsArray = Array.isArray(response) ? response : response.data;
+        
+        const formattedProducts = productsArray.map((product, index) => {
+          console.log('Processing product:', product); // Debug individual product
+          return {
+            key: product._id,           
+            seller: product.seller_id?.username || 'N/A',
+            id: product._id,
+            name: product.name || 'N/A',
+            brand: product.brand || 'N/A',
+            category: product.categoryId?.name || 'N/A',
+            color: product.color || 'N/A',
+            price: product.price || 0,
+            stock: product.quantity || 0,
+            description: product.description || 'N/A',
+            images: product.images || [],
+            image: product.image || null,
+            warranty: product.warranty || 0,
+            subcategory: product.subcategoryId?.name || 'N/A',
+            categoryId: product.categoryId?._id,
+            subcategoryId: product.subcategoryId?._id,
+            createdAt: product.createdAt
+          };
+        });
+
+        console.log('Formatted products:', formattedProducts); // Debug formatted products
+        setProducts(formattedProducts);
+        
+        // Extract unique categories
+        const categories = [...new Set(formattedProducts.map(product => product.category))];
+        setCategoryFilters(categories.map(cat => ({ text: cat, value: cat })));
+      } else {
+        console.error('Invalid products response:', response); // Debug invalid response
+        message.error('Invalid products data received');
+        setProducts([]);
+        setCategoryFilters([]);
+      }
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading products:', err);
+      message.error(err.message || 'Failed to load products');
+      setProducts([]);
+      setCategoryFilters([]);
+      setLoading(false);
+    }
+  };
+
+useEffect(() => {
+  fetchProducts();
+}, []);
+
+ // Filtered products based on search input
+ const filteredProducts = Array.isArray(products) 
+ ? products.filter((product) =>
+  product.name.toLowerCase().includes(searchTerm.toLowerCase())
+   )
+ : [];
+
+  // const filteredProducts = products.filter(product =>
+  //   product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
+
+ // Handle select/deselect for individual products
+ const toggleSelectProduct = (id) => {
+  setSelectedProducts(prev =>
+    prev.includes(id) ? prev.filter(productId => productId !== id) : [...prev, id]
+  );
+};
+
+ // Handle select/deselect all
+ const toggleSelectAll = () => {
+  if (selectedProducts.length === filteredProducts.length) {
+    setSelectedProducts([]);
+  } else {
+    const allProductIds = filteredProducts.map(product => product.id);
+    setSelectedProducts(allProductIds);
+  }
+};
+
+  // Delete selected products
+  const handleDeleteSelected = async () => {
+    if (selectedProducts.length === 0) {
+      message.warning('Please select products to delete');
       return;
     }
-    if (product.rating < 3) {
-      message.error(`Product ${product.name} cannot be approved due to low rating.`);
-      return;
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${selectedProducts.length} ${
+        selectedProducts.length === 1 ? "product" : "products"
+      }?`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await Promise.all(selectedProducts.map(id => deleteProduct(id)));
+      message.success(`Successfully deleted ${selectedProducts.length} products`);
+      setSelectedProducts([]);
+      fetchProducts(); // Refresh the product list
+    } catch (err) {
+      console.error('Error deleting products:', err);
+      message.error('Failed to delete some products');
     }
-    if (!product.stock) {
-      message.error(`Product ${product.name} cannot be approved as it is out of stock.`);
-      return;
-    }
-    message.success(`Product ${product.name} approved successfully.`);
   };
 
-  const removeProduct = (key) => {
-    message.success(`Product removed successfully.`);
-  };
-  
-  const showProductDetails = (product) => {
-    setSelectedProduct(product);
-    setDetailModalVisible(true);
+  const handleEdit = (id) => {
+    navigate(`/seller/ProductList/product/edit/${id}`);
   };
 
-  const handleDetailModalClose = () => {
-    setDetailModalVisible(false);
-    setSelectedProduct(null);
+  const handleViewDetails = (product) => {
+    Modal.info({
+      title: 'Product Details',
+      width: 'fit-content',
+      content: (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ flex: 1, minWidth: '280px'}}>
+            <p><strong>Product ID:</strong> {product.id}</p>
+            <p><strong>Seller :</strong> {product.seller}</p>
+            <p><strong>Product Name:</strong> {product.name}</p>
+            <p><strong>Brand:</strong> {product.brand || 'N/A'}</p>
+            <p><strong>Category:</strong> {product.category}</p>
+            <p><strong>Subcategory:</strong> {product.subcategory}</p>
+            <p><strong>Color:</strong> {product.color || 'N/A'}</p>
+            <p><strong>Quantity in Stock:</strong> {product.stock}</p>
+            <p><strong>Price:</strong> ${product.price.toFixed(2)}</p>
+            <p><strong>Description:</strong> {product.description || 'N/A'}</p>
+          </div>
+          <div style={{ flex: 1, minWidth: '280px' }}>
+            {product.images && product.images.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 max-w-full">
+                {product.images.slice(0, 5).map((image, index) => (
+                  <div 
+                    key={index} 
+                    className="relative overflow-hidden rounded-lg shadow-md"
+                    style={{ 
+                      width: '150px', 
+                      height: '150px',
+                      aspectRatio: '1/1'
+                    }}
+                  >
+                    <img 
+                      src={typeof image === 'string' ? image : image.url} 
+                      alt={`${product.name} ${index + 1}`}
+                      className="absolute inset-0 w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : product.image ? (
+              <div 
+                className="relative overflow-hidden rounded-lg shadow-md"
+                style={{ 
+                  width: '250px', 
+                  height: '250px',
+                  aspectRatio: '1/1'
+                }}
+              >
+                <img 
+                  src={typeof product.image === 'string' ? product.image : product.image.url}
+                  alt={product.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <p className="text-gray-500 italic">No images available</p>
+            )}
+          </div>
+        </div>
+      ),
+      onOk() {},
+    });
   };
 
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h3 className="mb-4 text-3xl font-bold">Product List</h3>
-      <Table 
-        columns={columns(approveProduct, removeProduct, showProductDetails)} 
-        dataSource={data1} 
-        pagination={{ pageSize: 10 }}
-      />
-
-    
-      <Modal
-        title="Product Details"
-        visible={detailModalVisible}
-        footer={null}
-        onCancel={handleDetailModalClose}
-      >
-        {selectedProduct && (
-          <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <div style={{ flex: 1 }}>
-              <p><strong>Name:</strong> {selectedProduct.name}</p>
-              <p><strong>Brand:</strong> {selectedProduct.brand}</p>
-              <p><strong>Category:</strong> {selectedProduct.category}</p>
-              <p><strong>Color:</strong> {selectedProduct.color}</p>
-              <p><strong>Price:</strong> ${selectedProduct.price.toFixed(2)}</p>
-              <p><strong>Stock:</strong> {selectedProduct.stock}</p>
-              <p><strong>Rating:</strong> {selectedProduct.rating} / 5</p>
-              <p><strong>Warranty:</strong> {selectedProduct.warranty} months</p>
-              <p><strong>Description:</strong> {selectedProduct.description}</p>
-            </div>
-            <div style={{ flex: 1, textAlign: 'right' }}>
-              <img src={selectedProduct.image} alt={selectedProduct.name} style={{ maxWidth: '250px', borderRadius: '8px' }} />
-            </div>
+    <div className="p-4 bg-gray-100 min-h-screen">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Products</h1>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-full pr-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <MdSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
           </div>
-        )}
-      </Modal>
+          {selectedProducts.length > 0 && (
+            <Button
+              type="primary"
+              danger
+              onClick={handleDeleteSelected}
+              className="bg-orange-500 hover:bg-orange-600 rounded-full flex items-center gap-2"
+            >
+              Delete Selected ({selectedProducts.length})
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <Table dataSource={filteredProducts} pagination={false} rowKey="key">
+        {/* Select column */}
+        <Table.Column
+          title={
+            <input
+              type="checkbox"
+              checked={selectedProducts.length === filteredProducts.length}
+              onChange={toggleSelectAll}
+            />
+          }
+          key="select"
+          render={(_, record) => (
+            <input
+              type="checkbox"
+              checked={selectedProducts.includes(record.id)}
+              onChange={() => toggleSelectProduct(record.id)}
+            />
+          )}
+        />
+        <Table.Column 
+          title={<span className="font-semibold text-lg">SNo</span>} 
+          dataIndex="key" 
+          key="key" 
+          render={(text, record, index) => <span className="font-semibold">{index + 1}</span>} 
+          
+        />
+      {/* <Table.Column 
+          title={<span className="font-semibold text-lg">Product ID</span>} 
+          dataIndex="id" 
+          key="id" 
+          render={(text) => <span className="font-semibold">{text}</span>} 
+        /> */}
+        <Table.Column 
+          title={<span className="font-semibold text-lg">Name</span>} 
+          dataIndex="name" 
+          key="name" 
+          render={(text) => <span className="font-semibold">{text}</span>} 
+        />
+        <Table.Column 
+    title= "Category"
+    dataIndex= "category"
+    filters={categoryFilters}
+    onFilter={(value, record) => record.category.includes(value)} 
+  />
+       <Table.Column 
+          title="Price" 
+          dataIndex="price" 
+          key="price" 
+          render={(price) => price !== undefined && price !== null ? `${price.toFixed(2)}` : 'N/A'}
+        />
+        <Table.Column 
+          title="Posted Time" 
+          dataIndex="createdAt" 
+          key="postedTime"
+          render={(timestamp) => {
+            if (!timestamp) return 'N/A';
+            try {
+              const date = new Date(timestamp);
+              return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              });
+            } catch (err) {
+              console.error('Error formatting time:', err);
+              return 'Invalid Time';
+            }
+          }}
+        />
+        <Table.Column 
+          title="Posted Date" 
+          dataIndex="createdAt" 
+          key="postedDate"
+          render={(timestamp) => {
+            if (!timestamp) return 'N/A';
+            try {
+              const date = new Date(timestamp);
+              return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              });
+            } catch (err) {
+              console.error('Error formatting date:', err);
+              return 'Invalid Date';
+            }
+          }}
+          sorter={(a, b) => {
+            if (!a.createdAt || !b.createdAt) return 0;
+            return new Date(a.createdAt) - new Date(b.createdAt);
+          }}
+        />
+        <Table.Column 
+          title="Stock" 
+          dataIndex="stock" 
+          key="stock" 
+        />
+        <Table.Column
+  title="Action"
+  key="action"
+  render={(text, record) => (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+      <Button type="link" onClick={() => handleViewDetails(record)}>
+        Detail
+      </Button>
+      <Button 
+        type="link" 
+        onClick={() => handleEdit(record.id)}
+      >
+        Edit
+      </Button>
+    </div>
+  )}
+/>
+      </Table>
     </div>
   );
 };

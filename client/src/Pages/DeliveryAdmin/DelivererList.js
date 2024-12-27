@@ -25,11 +25,11 @@ import axios from 'axios';
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const Sellers = () => {
-  const [sellers, setSellers] = useState([]);
+const DelivererList = () => {
+  const [deliverers, setDeliverers] = useState([]);
   // const [users, setUsers] = useState([]);
   const [penaltyModalVisible, setPenaltyModalVisible] = useState(false);
-  const [selectedSeller, setSelectedSeller] = useState(null);
+  const [selectedDeliverer, setSelectedDeliverer] = useState(null);
   const [penaltyType, setPenaltyType] = useState('');
   const [penaltyAmount, setPenaltyAmount] = useState('');
   const [penaltyReason, setPenaltyReason] = useState('');
@@ -37,34 +37,34 @@ const Sellers = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-// Fetch sellers from backend
-const fetchSellers = async () => {
+// Fetch Deliverers from backend
+const fetchDeliverers = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await axios.get('/api/users/users/seller', {
+    const response = await axios.get('/api/users/users/deliverer', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
-    setSellers(response.data.data);
+    setDeliverers(response.data.data);
     setLoading(false);
   } catch (error) {
-    message.error('Failed to fetch sellers list');
+    message.error('Failed to fetch deliverers list');
     setLoading(false);
   }
 };
 
 
-  const handleUnsuspendSeller = (id) => {
-    setSellers(sellers.map(seller =>
-      seller.id === id ? { ...seller, status: 'Active' } : seller
+  const handleUnsuspendDeliverer = (id) => {
+    setDeliverers(deliverers.map(deliverer =>
+        deliverer.id === id ? { ...deliverer, status: 'Active' } : deliverer
     ));
-    message.success('Seller unsuspended successfully');
+    message.success('Deliverer unsuspended successfully');
   };
 
-  const handleRemoveSeller = (id) => {
-    setSellers(sellers.filter(seller => seller.id !== id));
-    message.success('Seller removed successfully');
+  const handleRemoveDeliverer = (id) => {
+    setDeliverers(deliverers.filter(seller => deliverers.id !== id));
+    message.success('Deliverer removed successfully');
   };
 
   const handleSendPenalty = () => {
@@ -72,16 +72,16 @@ const fetchSellers = async () => {
       message.error('Please fill in all the penalty details');
       return;
     }
-    message.success(`Penalty sent to ${selectedSeller?.name}: ${penaltyType} - Birr ${penaltyAmount}`);
+    message.success(`Penalty sent to ${selectedDeliverer?.name}: ${penaltyType} - Birr ${penaltyAmount}`);
     setPenaltyModalVisible(false);
-    setSelectedSeller(null);
+    setSelectedDeliverer(null);
     setPenaltyType('');
     setPenaltyAmount('');
     setPenaltyReason('');
   };
 
-  const handleViewProfile = (seller) => {
-    setSelectedSeller(seller);
+  const handleViewProfile = (deliverer) => {
+    setSelectedDeliverer(deliverer);
     setIsDrawerVisible(true);
   };
 
@@ -101,14 +101,14 @@ const fetchSellers = async () => {
 
    // Fetch users on component mount
   useEffect(() => {
-    fetchSellers();
+    fetchDeliverers();
   }, []);
 
   const columns = [
     {
-      title: 'Seller Name',
-      dataIndex: 'username',
-      key: 'username',
+      title: 'Deliverer Name',
+      dataIndex: 'name',
+      key: 'name',
       render: (text, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <FaUserTie style={{ color: '#1A3C9C' }} />
@@ -201,23 +201,8 @@ const fetchSellers = async () => {
           </Tooltip>
 
           <Button
-            onClick={() => handleUnsuspendSeller(record.id)}
-            style={{
-              backgroundColor: '#E8F5E9',
-              color: '#43A047',
-              border: 'none',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px'
-            }}
-          >
-            <FaUndo /> Unsuspend
-          </Button>
-
-          <Button
             onClick={() => {
-              setSelectedSeller(record);
+              setSelectedDeliverer(record);
               setPenaltyModalVisible(true);
             }}
             style={{
@@ -234,8 +219,8 @@ const fetchSellers = async () => {
           </Button>
 
           <Popconfirm
-            title="Are you sure you want to remove this seller?"
-            onConfirm={() => handleRemoveSeller(record.id)}
+            title="Are you sure you want to remove this deliverer?"
+            onConfirm={() => handleRemoveDeliverer(record.id)}
             okText="Yes"
             cancelText="No"
           >
@@ -253,6 +238,22 @@ const fetchSellers = async () => {
               <FaTrash /> Remove
             </Button>
           </Popconfirm>
+
+          <Button
+            onClick={() => handleUnsuspendDeliverer(record.id)}
+            style={{
+              backgroundColor: '#E8F5E9',
+              color: '#43A047',
+              border: 'none',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
+            }}
+          >
+            <FaUndo /> Unsuspend
+          </Button>
+
         </Space>
       ),
     },
@@ -341,18 +342,18 @@ const fetchSellers = async () => {
             alignItems: 'center',
             gap: '10px'
           }}>
-            <FaStore /> Manage Sellers
+            <FaStore /> Manage Deliverer
           </h1>
         </div>
 
         <Table
           columns={columns}
-          dataSource={sellers}
+          dataSource={deliverers}
           rowKey="id"
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
-            showTotal: (total) => `Total ${total} sellers`,
+            showTotal: (total) => `Total ${total} deliverers`,
           }}
           style={{
             backgroundColor: 'white',
@@ -372,7 +373,7 @@ const fetchSellers = async () => {
             gap: '10px'
           }}>
             <FaExclamationTriangle />
-            Send Penalty to {selectedSeller?.name}
+            Send Penalty to {selectedDeliverer?.name}
           </div>
         }
         visible={penaltyModalVisible}
@@ -423,7 +424,7 @@ const fetchSellers = async () => {
             alignItems: 'center',
             gap: '10px'
           }}>
-            <FaUserCircle /> Seller Profile
+            <FaUserCircle /> Deliverer Profile
           </div>
         }
         width={700}
@@ -431,7 +432,7 @@ const fetchSellers = async () => {
         onClose={() => setIsDrawerVisible(false)}
         visible={isDrawerVisible}
       >
-        {selectedSeller && (
+        {selectedDeliverer && (
           <Tabs defaultActiveKey="1">
             <TabPane
               tab={
@@ -447,30 +448,30 @@ const fetchSellers = async () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FaStore style={{ color: '#1A3C9C', fontSize: '24px' }} />
                       <div>
-                        <div style={{ fontSize: '18px', fontWeight: '500' }}>{selectedSeller.shop}</div>
-                        <Rate disabled defaultValue={selectedSeller.rating} style={{ fontSize: '14px' }} />
+                        <div style={{ fontSize: '18px', fontWeight: '500' }}>{selectedDeliverer.shop}</div>
+                        <Rate disabled defaultValue={selectedDeliverer.rating} style={{ fontSize: '14px' }} />
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FaUserTie style={{ color: '#1A3C9C' }} />
-                      <span><strong>Owner:</strong> {selectedSeller.name}</span>
+                      <span><strong>Owner:</strong> {selectedDeliverer.name}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FaEnvelope style={{ color: '#1A3C9C' }} />
-                      <span><strong>Email:</strong> {selectedSeller.email}</span>
+                      <span><strong>Email:</strong> {selectedDeliverer.email}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FaPhone style={{ color: '#1A3C9C' }} />
-                      <span><strong>Phone:</strong> {selectedSeller.phone}</span>
+                      <span><strong>Phone:</strong> {selectedDeliverer.phone}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FaMapMarkerAlt style={{ color: '#1A3C9C' }} />
-                      <span><strong>Address:</strong> {selectedSeller.address}</span>
+                      <span><strong>Address:</strong> {selectedDeliverer.address}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <FaCalendarAlt style={{ color: '#1A3C9C' }} />
 
-                      <span><strong>Join Date:</strong> {selectedSeller.joinDate}</span>
+                      <span><strong>Join Date:</strong> {selectedDeliverer.joinDate}</span>
                     </div>
                   </Space>
                 </Card>
@@ -479,24 +480,24 @@ const fetchSellers = async () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
                     <Statistic
                       title="Monthly Revenue"
-                      value={formatCurrency(selectedSeller.performanceMetrics.monthlyRevenue)}
+                      value={formatCurrency(selectedDeliverer.performanceMetrics.monthlyRevenue)}
                       valueStyle={{ color: '#1A3C9C' }}
                     />
                     <Statistic
                       title="Order Completion"
-                      value={selectedSeller.performanceMetrics.orderCompletion}
+                      value={selectedDeliverer.performanceMetrics.orderCompletion}
                       suffix="%"
                       valueStyle={{ color: '#43A047' }}
                     />
                     <Statistic
                       title="Customer Satisfaction"
-                      value={selectedSeller.performanceMetrics.customerSatisfaction}
+                      value={selectedDeliverer.performanceMetrics.customerSatisfaction}
                       suffix="/5"
                       valueStyle={{ color: '#0288D1' }}
                     />
                     <Statistic
                       title="Return Rate"
-                      value={selectedSeller.performanceMetrics.returnRate}
+                      value={selectedDeliverer.performanceMetrics.returnRate}
                       suffix="%"
                       valueStyle={{ color: '#E53935' }}
                     />
@@ -513,7 +514,7 @@ const fetchSellers = async () => {
               }
               key="2"
             >
-              {renderProducts(selectedSeller.products)}
+              {renderProducts(selectedDeliverer.products)}
             </TabPane>
 
             <TabPane
@@ -524,7 +525,7 @@ const fetchSellers = async () => {
               }
               key="3"
             >
-              {renderSales(selectedSeller.recentSales)}
+              {renderSales(selectedDeliverer.recentSales)}
             </TabPane>
           </Tabs>
         )}
@@ -533,4 +534,4 @@ const fetchSellers = async () => {
   );
 };
 
-export default Sellers;
+export default DelivererList;
