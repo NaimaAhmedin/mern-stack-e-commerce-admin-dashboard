@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-<<<<<<< HEAD
-import { Table, Button, Space, message, Popconfirm, Modal, Input, Select, Card, Tabs, Badge, Tooltip, Drawer, Rate, Statistic } from 'antd';
-=======
 import { Table, Button, Space, message, Popconfirm, Modal, Input, Select, Card, Tabs, Badge, Tooltip, Drawer, Rate, Statistic, Spin } from 'antd';
->>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
 import { 
   FaUndo, 
   FaTrash, 
@@ -24,23 +20,14 @@ import {
   FaInfoCircle
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { getSellers, updateSellerStatus } from '../../services/sellerService';
-=======
 import axios from 'axios';
->>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
 
 const { Option } = Select;
 const { TabPane } = Tabs;
 
 const Sellers = () => {
   const [sellers, setSellers] = useState([]);
-<<<<<<< HEAD
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-=======
   // const [users, setUsers] = useState([]);
->>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
   const [penaltyModalVisible, setPenaltyModalVisible] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState(null);
   const [penaltyType, setPenaltyType] = useState('');
@@ -50,46 +37,6 @@ const Sellers = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-<<<<<<< HEAD
-  useEffect(() => {
-    const fetchSuspendedSellers = async () => {
-      try {
-        setIsLoading(true);
-        const response = await getSellers({ 'sellerDetails.status': 'suspended' });
-        
-        const suspendedSellers = response.data.map(seller => ({
-          id: seller._id,
-          name: `${seller.firstName} ${seller.lastName}`.trim(),
-          email: seller.email,
-          phone: seller.phone,
-          status: 'Suspended',
-          address: seller.address ? 
-            `${seller.address.street}, ${seller.address.city}, ${seller.address.state}` 
-            : 'N/A',
-          businessLicense: seller.sellerDetails?.businessLicense || 'N/A'
-        }));
-
-        setSellers(suspendedSellers);
-        setIsLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setIsLoading(false);
-      }
-    };
-
-    fetchSuspendedSellers();
-  }, []);
-
-  const handleUnsuspendSeller = async (id) => {
-    try {
-      await updateSellerStatus(id, 'active');
-      setSellers(sellers.filter(seller => seller.id !== id));
-      message.success('Seller unsuspended successfully');
-    } catch (err) {
-      message.error('Failed to unsuspend seller');
-      console.error(err);
-    }
-=======
 // Fetch sellers from backend
 const fetchSellers = async () => {
   try {
@@ -113,7 +60,6 @@ const fetchSellers = async () => {
       seller.id === id ? { ...seller, status: 'Active' } : seller
     ));
     message.success('Seller unsuspended successfully');
->>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
   };
 
   const handleRemoveSeller = (id) => {
@@ -121,35 +67,17 @@ const fetchSellers = async () => {
     message.success('Seller removed successfully');
   };
 
-  const handleSendPenalty = async () => {
+  const handleSendPenalty = () => {
     if (!penaltyType || !penaltyAmount || !penaltyReason) {
       message.error('Please fill in all the penalty details');
       return;
     }
-    
-    try {
-      // TODO: Implement actual penalty sending logic to backend
-      await message.success(`Penalty sent to ${selectedSeller?.name}: ${penaltyType} - Birr ${penaltyAmount}`);
-      setPenaltyModalVisible(false);
-      setSelectedSeller(null);
-      setPenaltyType('');
-      setPenaltyAmount('');
-      setPenaltyReason('');
-    } catch (error) {
-      message.error('Failed to send penalty');
-      console.error(error);
-    }
-  };
-
-  const handlePermanentRemoval = async (id) => {
-    try {
-      // TODO: Implement actual permanent seller removal logic
-      await message.success('Seller permanently removed');
-      setSellers(sellers.filter(seller => seller.id !== id));
-    } catch (error) {
-      message.error('Failed to remove seller');
-      console.error(error);
-    }
+    message.success(`Penalty sent to ${selectedSeller?.name}: ${penaltyType} - Birr ${penaltyAmount}`);
+    setPenaltyModalVisible(false);
+    setSelectedSeller(null);
+    setPenaltyType('');
+    setPenaltyAmount('');
+    setPenaltyReason('');
   };
 
   const handleViewProfile = (seller) => {
@@ -157,8 +85,6 @@ const fetchSellers = async () => {
     setIsDrawerVisible(true);
   };
 
-<<<<<<< HEAD
-=======
   const getStatusColor = (status) => {
     const colors = {
       'Delivered': '#43A047',
@@ -178,7 +104,6 @@ const fetchSellers = async () => {
     fetchSellers();
   }, []);
 
->>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
   const columns = [
     {
       title: 'Seller Name',
@@ -195,29 +120,19 @@ const fetchSellers = async () => {
       ),
     },
     {
-      title: 'Contact',
-      dataIndex: 'phone',
-      key: 'phone',
-      render: (text) => (
+      title: 'Shop',
+      dataIndex: 'shop',
+      key: 'shop',
+      render: (text, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <FaPhone style={{ color: '#0288D1' }} />
-          <span>{text}</span>
+          <FaStore style={{ color: '#0288D1' }} />
+          <div>
+            <div style={{ color: '#0288D1', fontWeight: '500' }}>{text}</div>
+            <Rate disabled defaultValue={record.rating} style={{ fontSize: '12px' }} />
+          </div>
         </div>
       ),
     },
-<<<<<<< HEAD
-    {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
-      render: (text) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <FaMapMarkerAlt style={{ color: '#43A047' }} />
-          <span>{text}</span>
-        </div>
-      ),
-    },
-=======
     // {
     //   title: 'Performance',
     //   key: 'performance',
@@ -246,98 +161,98 @@ const fetchSellers = async () => {
     //     </Space>
     //   ),
     // },
->>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
     {
-      title: 'Business License',
-      dataIndex: 'businessLicense',
-      key: 'businessLicense',
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <span style={{
+          color: status === 'Active' ? '#43A047' : '#E53935',
+          fontWeight: '500',
+          backgroundColor: status === 'Active' ? '#E8F5E9' : '#FFEBEE',
+          padding: '4px 12px',
+          borderRadius: '12px',
+          fontSize: '14px'
+        }}>
+          {status}
+        </span>
+      ),
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_, record) => (
-        <Space direction="vertical" size="small">
-          <Tooltip title="Unsuspend Seller">
-            <Button 
-              onClick={() => handleUnsuspendSeller(record.id)}
-              style={{
-                backgroundColor: '#E8F5E9',
-                color: '#43A047',
-                border: 'none',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                width: '100%'
-              }}
-            >
-              <FaUndo /> Unsuspend Seller
-            </Button>
-          </Tooltip>
-
-          <Tooltip title="Send Penalty">
-            <Button 
-              onClick={() => {
-                setSelectedSeller(record);
-                setPenaltyModalVisible(true);
-              }}
-              style={{
-                backgroundColor: '#FFF3E0',
-                color: '#FB8C00',
-                border: 'none',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                width: '100%'
-              }}
-            >
-              <FaExclamationTriangle /> Send Penalty
-            </Button>
-          </Tooltip>
-
-          <Popconfirm
-            title="Are you sure you want to permanently remove this seller?"
-            description="This action cannot be undone and will delete all seller data."
-            onConfirm={() => handlePermanentRemoval(record.id)}
-            okText="Yes, Remove Permanently"
-            cancelText="No"
-            okButtonProps={{
-              style: { backgroundColor: '#D32F2F', borderColor: '#D32F2F' }
-            }}
-          >
-            <Button 
-              danger
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                width: '100%',
-                backgroundColor: '#FFEBEE',
-                color: '#D32F2F'
-              }}
-            >
-              <FaTrash /> Permanent Removal
-            </Button>
-          </Popconfirm>
-
-          <Tooltip title="View Seller Details">
-            <Button 
+        <Space size="middle">
+          <Tooltip title="View Profile">
+            <Button
               onClick={() => handleViewProfile(record)}
               style={{
                 backgroundColor: '#E3F2FD',
-                color: '#1976D2',
+                color: '#1A3C9C',
                 border: 'none',
                 borderRadius: '6px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                width: '100%'
+                gap: '5px'
               }}
             >
-              <FaUserCircle /> View Profile
+              <FaUserCircle /> Profile
             </Button>
           </Tooltip>
+
+          <Button
+            onClick={() => handleUnsuspendSeller(record.id)}
+            style={{
+              backgroundColor: '#E8F5E9',
+              color: '#43A047',
+              border: 'none',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
+            }}
+          >
+            <FaUndo /> Unsuspend
+          </Button>
+
+          <Button
+            onClick={() => {
+              setSelectedSeller(record);
+              setPenaltyModalVisible(true);
+            }}
+            style={{
+              backgroundColor: '#E1F5FE',
+              color: '#0288D1',
+              border: 'none',
+              borderRadius: '6px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
+            }}
+          >
+            <FaExclamationTriangle /> Penalty
+          </Button>
+
+          <Popconfirm
+            title="Are you sure you want to remove this seller?"
+            onConfirm={() => handleRemoveSeller(record.id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button
+              style={{
+                backgroundColor: '#FFEBEE',
+                color: '#E53935',
+                border: 'none',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
+              <FaTrash /> Remove
+            </Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -353,7 +268,7 @@ const fetchSellers = async () => {
           title: 'Price', 
           dataIndex: 'price', 
           key: 'price',
-          render: (price) => `Birr ${price.toFixed(2)}`
+          render: (price) => formatCurrency(price)
         },
         { 
           title: 'Stock', 
@@ -381,7 +296,7 @@ const fetchSellers = async () => {
           title: 'Amount', 
           dataIndex: 'amount', 
           key: 'amount',
-          render: (amount) => `Birr ${amount.toFixed(2)}`
+          render: (amount) => formatCurrency(amount)
         },
         { 
           title: 'Status', 
@@ -399,10 +314,6 @@ const fetchSellers = async () => {
     />
   );
 
-<<<<<<< HEAD
-  if (isLoading) return <div>Loading suspended sellers...</div>;
-  if (error) return <div>Error: {error}</div>;
-=======
   if (loading) {
     return (
       <div style={{ 
@@ -415,7 +326,6 @@ const fetchSellers = async () => {
       </div>
     );
   }
->>>>>>> 774e82e72fe2d0444281520e8cea53f4f8eb901d
 
   return (
     <div style={{ padding: '20px', background: '#f4f6f9', minHeight: '100vh' }}>
@@ -435,13 +345,14 @@ const fetchSellers = async () => {
           </h1>
         </div>
 
-        <Table 
-          columns={columns} 
-          dataSource={sellers} 
+        <Table
+          columns={columns}
+          dataSource={sellers}
           rowKey="id"
-          pagination={{ 
-            pageSize: 10, 
-            showSizeChanger: true 
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} sellers`,
           }}
           style={{
             backgroundColor: 'white',
@@ -449,169 +360,175 @@ const fetchSellers = async () => {
             overflow: 'hidden'
           }}
         />
-
-        <Modal
-          title={
-            <div style={{ 
-              color: '#1A3C9C',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <FaExclamationTriangle />
-              Send Penalty to {selectedSeller?.name}
-            </div>
-          }
-          visible={penaltyModalVisible}
-          onOk={handleSendPenalty}
-          onCancel={() => setPenaltyModalVisible(false)}
-          okButtonProps={{
-            style: {
-              backgroundColor: '#E53935',
-              borderColor: '#E53935',
-            }
-          }}
-        >
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Select
-              placeholder="Select Penalty Type"
-              style={{ width: '100%' }}
-              onChange={(value) => setPenaltyType(value)}
-              value={penaltyType}
-            >
-              <Option value="warning">Warning</Option>
-              <Option value="fine">Fine</Option>
-              <Option value="suspension">Suspension</Option>
-            </Select>
-
-            <Input
-              prefix="Birr"
-              placeholder="Penalty Amount"
-              type="number"
-              value={penaltyAmount}
-              onChange={(e) => setPenaltyAmount(e.target.value)}
-            />
-
-            <Input.TextArea
-              placeholder="Reason for Penalty"
-              value={penaltyReason}
-              onChange={(e) => setPenaltyReason(e.target.value)}
-              rows={4}
-            />
-          </Space>
-        </Modal>
-
-        <Drawer
-          title={
-            <div style={{ 
-              color: '#1A3C9C',
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <FaUserCircle /> Seller Profile
-            </div>
-          }
-          width={700}
-          placement="right"
-          onClose={() => setIsDrawerVisible(false)}
-          visible={isDrawerVisible}
-        >
-          {selectedSeller && (
-            <Tabs defaultActiveKey="1">
-              <TabPane
-                tab={
-                  <span>
-                    <FaInfoCircle /> Overview
-                  </span>
-                }
-                key="1"
-              >
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Card>
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <FaStore style={{ color: '#1A3C9C', fontSize: '24px' }} />
-                        <div>
-                          <div style={{ fontSize: '18px', fontWeight: '500' }}>{selectedSeller.name}</div>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <FaUserTie style={{ color: '#1A3C9C' }} />
-                        <span><strong>Owner:</strong> {selectedSeller.name}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <FaEnvelope style={{ color: '#1A3C9C' }} />
-                        <span><strong>Email:</strong> {selectedSeller.email}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <FaPhone style={{ color: '#1A3C9C' }} />
-                        <span><strong>Phone:</strong> {selectedSeller.phone}</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <FaMapMarkerAlt style={{ color: '#1A3C9C' }} />
-                        <span><strong>Address:</strong> {selectedSeller.address}</span>
-                      </div>
-                    </Space>
-                  </Card>
-
-                  <Card title="Performance Metrics">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-                      <Statistic
-                        title="Monthly Revenue"
-                        value={`Birr 0`}
-                        valueStyle={{ color: '#1A3C9C' }}
-                      />
-                      <Statistic
-                        title="Order Completion"
-                        value="0"
-                        suffix="%"
-                        valueStyle={{ color: '#43A047' }}
-                      />
-                      <Statistic
-                        title="Customer Satisfaction"
-                        value="0"
-                        suffix="/5"
-                        valueStyle={{ color: '#0288D1' }}
-                      />
-                      <Statistic
-                        title="Return Rate"
-                        value="0"
-                        suffix="%"
-                        valueStyle={{ color: '#E53935' }}
-                      />
-                    </div>
-                  </Card>
-                </Space>
-              </TabPane>
-
-              <TabPane
-                tab={
-                  <span>
-                    <FaBox /> Products
-                  </span>
-                }
-                key="2"
-              >
-                {renderProducts([])}
-              </TabPane>
-
-              <TabPane
-                tab={
-                  <span>
-                    <FaHistory /> Recent Sales
-                  </span>
-                }
-                key="3"
-              >
-                {renderSales([])}
-              </TabPane>
-            </Tabs>
-          )}
-        </Drawer>
       </Card>
+
+      <Modal
+        title={
+          <div style={{ 
+            color: '#1A3C9C',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <FaExclamationTriangle />
+            Send Penalty to {selectedSeller?.name}
+          </div>
+        }
+        visible={penaltyModalVisible}
+        onOk={handleSendPenalty}
+        onCancel={() => setPenaltyModalVisible(false)}
+        okButtonProps={{
+          style: {
+            backgroundColor: '#E53935',
+            borderColor: '#E53935',
+          }
+        }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Select
+            placeholder="Select Penalty Type"
+            style={{ width: '100%' }}
+            onChange={(value) => setPenaltyType(value)}
+            value={penaltyType}
+          >
+            <Option value="warning">Warning</Option>
+            <Option value="fine">Fine</Option>
+            <Option value="suspension">Suspension</Option>
+          </Select>
+
+          <Input
+            prefix="Birr"
+            placeholder="Penalty Amount"
+            type="number"
+            value={penaltyAmount}
+            onChange={(e) => setPenaltyAmount(e.target.value)}
+          />
+
+          <Input.TextArea
+            placeholder="Reason for Penalty"
+            value={penaltyReason}
+            onChange={(e) => setPenaltyReason(e.target.value)}
+            rows={4}
+          />
+        </Space>
+      </Modal>
+
+      <Drawer
+        title={
+          <div style={{ 
+            color: '#1A3C9C',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <FaUserCircle /> Seller Profile
+          </div>
+        }
+        width={700}
+        placement="right"
+        onClose={() => setIsDrawerVisible(false)}
+        visible={isDrawerVisible}
+      >
+        {selectedSeller && (
+          <Tabs defaultActiveKey="1">
+            <TabPane
+              tab={
+                <span>
+                  <FaInfoCircle /> Overview
+                </span>
+              }
+              key="1"
+            >
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Card>
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FaStore style={{ color: '#1A3C9C', fontSize: '24px' }} />
+                      <div>
+                        <div style={{ fontSize: '18px', fontWeight: '500' }}>{selectedSeller.shop}</div>
+                        <Rate disabled defaultValue={selectedSeller.rating} style={{ fontSize: '14px' }} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FaUserTie style={{ color: '#1A3C9C' }} />
+                      <span><strong>Owner:</strong> {selectedSeller.name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FaEnvelope style={{ color: '#1A3C9C' }} />
+                      <span><strong>Email:</strong> {selectedSeller.email}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FaPhone style={{ color: '#1A3C9C' }} />
+                      <span><strong>Phone:</strong> {selectedSeller.phone}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FaMapMarkerAlt style={{ color: '#1A3C9C' }} />
+                      <span><strong>Address:</strong> {selectedSeller.address}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FaCalendarAlt style={{ color: '#1A3C9C' }} />
+
+                      <span><strong>Join Date:</strong> {selectedSeller.joinDate}</span>
+                    </div>
+                  </Space>
+                </Card>
+
+                <Card title="Performance Metrics">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+                    <Statistic
+                      title="Monthly Revenue"
+                      value={formatCurrency(selectedSeller.performanceMetrics.monthlyRevenue)}
+                      valueStyle={{ color: '#1A3C9C' }}
+                    />
+                    <Statistic
+                      title="Order Completion"
+                      value={selectedSeller.performanceMetrics.orderCompletion}
+                      suffix="%"
+                      valueStyle={{ color: '#43A047' }}
+                    />
+                    <Statistic
+                      title="Customer Satisfaction"
+                      value={selectedSeller.performanceMetrics.customerSatisfaction}
+                      suffix="/5"
+                      valueStyle={{ color: '#0288D1' }}
+                    />
+                    <Statistic
+                      title="Return Rate"
+                      value={selectedSeller.performanceMetrics.returnRate}
+                      suffix="%"
+                      valueStyle={{ color: '#E53935' }}
+                    />
+                  </div>
+                </Card>
+              </Space>
+            </TabPane>
+
+            <TabPane
+              tab={
+                <span>
+                  <FaBox /> Products
+                </span>
+              }
+              key="2"
+            >
+              {renderProducts(selectedSeller.products)}
+            </TabPane>
+
+            <TabPane
+              tab={
+                <span>
+                  <FaHistory /> Recent Sales
+                </span>
+              }
+              key="3"
+            >
+              {renderSales(selectedSeller.recentSales)}
+            </TabPane>
+          </Tabs>
+        )}
+      </Drawer>
     </div>
   );
 };
