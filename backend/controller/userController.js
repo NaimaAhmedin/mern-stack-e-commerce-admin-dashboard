@@ -14,32 +14,174 @@ exports.getUserProfile = async (req, res, next) => {
 };
 
 // Update User Profile
-exports.updateUserProfile = async (req, res, next) => {
-  const { name, email, password } = req.body;
+const cloudinary = require('../utils/cloudinary');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
+exports.updateUserProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
     }
 
-    // Update fields if provided
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (password) user.password = password;
+    // Log incoming request body for debugging
+    console.log('Update Profile Request Body:', req.body);
+    console.log('Uploaded File:', req.file);
 
-    await user.save();
+    // Destructure and sanitize input
+    const { 
+      name, 
+      email, 
+      phone, 
+      address, 
+      businessLicenseNumber,
+      department 
+    } = req.body;
+
+    // Sanitize name 
+    const sanitizedName = (name && typeof name === 'string') 
+      ? name.trim() 
+      : (user.name || 'Unnamed User');
+
+    // Validate name explicitly
+    if (!sanitizedName || sanitizedName.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name is required',
+        errors: {
+          name: 'Name must contain at least one non-whitespace character'
+        }
+      });
+    }
+
+    // Sanitize address
+    const sanitizedAddress = (address && typeof address === 'string')
+      ? address.trim()
+      : '';
+
+    // Input validation
+    if (email && !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    // Update basic profile fields
+    user.name = sanitizedName;
+    if (email) user.email = email;
+    if (phone) user.phone = phone;
+    user.address = sanitizedAddress;
+
+    // Update seller details if applicable
+    if (businessLicenseNumber && user.role === 'seller') {
+      user.sellerDetails = user.sellerDetails || {};
+      user.sellerDetails.businessLicense = businessLicenseNumber;
+    }
+
+    // Update admin details if applicable
+    if (department && ['ContentAdmin', 'DeliveryAdmin'].includes(user.role)) {
+      user.adminDetails = user.adminDetails || {};
+      user.adminDetails.department = department;
+    }
+
+    // Handle profile image upload
+    if (req.file) {
+      try {
+        // Validate file
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!allowedTypes.includes(req.file.mimetype)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid file type. Only JPEG and PNG are allowed.'
+          });
+        }
+
+        // Check file size (2MB limit)
+        if (req.file.size > 2 * 1024 * 1024) {
+          return res.status(400).json({
+            success: false,
+            message: 'File size exceeds 2MB limit'
+          });
+        }
+
+        // If user already has a profile image, delete the old one from Cloudinary
+        if (user.profileImage && user.profileImage.public_id) {
+          await cloudinary.uploader.destroy(user.profileImage.public_id);
+        }
+
+        // Upload new image to Cloudinary
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: 'profile_images',
+          transformation: [
+            { width: 500, height: 500, crop: 'limit' }
+          ]
+        });
+
+        // Remove local file after upload
+        fs.unlinkSync(req.file.path);
+
+        // Update user's profile image
+        user.profileImage = {
+          public_id: result.public_id,
+          url: result.secure_url
+        };
+      } catch (uploadError) {
+        console.error('Profile image upload error:', uploadError);
+        // Remove local file in case of upload error
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        return res.status(500).json({
+          success: false,
+          message: 'Error uploading profile image',
+          details: uploadError.message
+        });
+      }
+    }
+
+    // Save updated user with explicit validation
+    try {
+      await user.save();
+    } catch (saveError) {
+      console.error('User save error:', saveError);
+      return res.status(400).json({
+        success: false,
+        message: 'Profile update validation failed',
+        errors: saveError.errors || { general: saveError.message }
+      });
+    }
+
+    // Prepare response data
+    const responseData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      role: user.role,
+      profileImage: user.profileImage,
+      ...(user.role === 'seller' && { sellerDetails: user.sellerDetails }),
+      ...(user.role === 'ContentAdmin' && { 
+        adminDetails: {
+          department: user.adminDetails?.department 
+        } 
+      })
+    };
 
     res.status(200).json({
       success: true,
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      data: responseData
     });
   } catch (error) {
+    console.error('Profile update error:', error);
+    // Pass to error middleware for consistent error handling
     next(error);
   }
 };

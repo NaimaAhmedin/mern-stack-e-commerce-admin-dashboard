@@ -7,15 +7,51 @@ const {
   deleteUserByAdmin,
   getAdminsByRole,
   getUsersByRole,
-  getAllAdmins
+  getAllAdmins,
+  updateUserProfile,
+  deleteUserAccount
 } = require('../controller/userController');
 const { protect } = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
+const multer = require('multer');
+const path = require('path');
+const User = require('../Models/userSchema'); // Corrected import path
 
 const router = express.Router();
 
+// Multer configuration for file upload
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, 'uploads/profile_images/');
+  },
+  filename: function(req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter to limit file types
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only JPEG and PNG are allowed.'), false);
+  }
+};
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { 
+    fileSize: 2 * 1024 * 1024 // 2MB file size limit
+  }
+});
+
 // User Profile Routes
-router.get('/profile', protect, getUserProfile);
+router.route('/profile')
+  .get(protect, getUserProfile)
+  .put(protect, upload.single('profileImage'), updateUserProfile);
 
 // Admin Management Routes
 router.get('/admins', 
@@ -59,5 +95,109 @@ router.delete('/admin/:id',
   roleMiddleware(['SuperAdmin']), 
   deleteUserByAdmin
 );
+
+router.route('/delete-account')
+  .delete(protect, deleteUserAccount);
+
+// Seller Menu Profile Route
+router.get('/seller/menu-profile', protect, roleMiddleware(['seller']), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select('name email profileImage');
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Prepare response data
+    const profileData = {
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage?.url || null
+    };
+
+    res.status(200).json({
+      success: true,
+      data: profileData
+    });
+  } catch (error) {
+    console.error('Seller menu profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching seller profile'
+    });
+  }
+});
+
+// Content Admin Menu Profile Route
+router.get('/content-admin/menu-profile', protect, roleMiddleware(['ContentAdmin']), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select('name email profileImage adminDetails');
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Prepare response data
+    const profileData = {
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage?.url || null,
+      department: user.adminDetails?.department || 'Content Department'
+    };
+
+    res.status(200).json({
+      success: true,
+      data: profileData
+    });
+  } catch (error) {
+    console.error('Content Admin menu profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching content admin profile'
+    });
+  }
+});
+
+// Delivery Admin Menu Profile Route
+router.get('/delivery-admin/menu-profile', protect, roleMiddleware(['DeliveryAdmin']), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .select('name email profileImage adminDetails');
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Prepare response data
+    const profileData = {
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage?.url || null,
+      department: user.adminDetails?.department || 'Delivery Department'
+    };
+
+    res.status(200).json({
+      success: true,
+      data: profileData
+    });
+  } catch (error) {
+    console.error('Delivery Admin menu profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching delivery admin profile'
+    });
+  }
+});
 
 module.exports = router;

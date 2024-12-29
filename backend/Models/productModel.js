@@ -27,7 +27,24 @@ const productSchema = new mongoose.Schema({
   warranty: { type: Number, default: 0 },
   description: { type: String },
   images: {
-    type: [String],
+    type: [{
+      public_id: { 
+        type: String, 
+        required: true 
+      },
+      url: { 
+        type: String, 
+        required: true 
+      }
+    }],
+    validate: [
+      {
+        validator: function(v) {
+          return v.length <= 5;
+        },
+        message: 'A product can have at most 5 images.'
+      }
+    ],
     default: []
   }
 }, { timestamps: true });

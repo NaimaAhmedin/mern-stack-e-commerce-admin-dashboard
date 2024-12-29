@@ -89,6 +89,19 @@ const Productlist = () => {
         
         const formattedProducts = productsArray.map((product, index) => {
           console.log('Processing product:', product); // Debug individual product
+          
+          // Safe image handling
+          const processImages = (images) => {
+            if (!images || !Array.isArray(images)) return [];
+            return images.map(img => {
+              if (typeof img === 'string') return img;
+              if (img && img.url) return img.url;
+              return null;
+            }).filter(Boolean);
+          };
+
+          const processedImages = processImages(product.images);
+
           return {
             key: product._id,
             id: product._id,
@@ -99,31 +112,30 @@ const Productlist = () => {
             price: product.price || 0,
             stock: product.quantity || 0,
             description: product.description || 'N/A',
-            images: product.images || [],
-            image: product.image || null,
+            images: processedImages,
+            image: processedImages.length > 0 ? processedImages[0] : null,
             warranty: product.warranty || 0,
             subcategory: product.subcategoryId?.name || 'N/A',
             categoryId: product.categoryId?._id,
-            subcategoryId: product.subcategoryId?._id,
-            createdAt: product.createdAt
+            seller_id: product.seller_id?._id,
+            postedDate: new Date(product.createdAt).toLocaleDateString(),
+            postedTime: new Date(product.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           };
         });
 
-        console.log('Formatted products:', formattedProducts); // Debug formatted products
+        console.log('Formatted products:', formattedProducts);
         setProducts(formattedProducts);
         
         // Extract unique categories
         const categories = [...new Set(formattedProducts.map(product => product.category))];
         setCategoryFilters(categories.map(cat => ({ text: cat, value: cat })));
       } else {
-        console.error('Invalid products response:', response); // Debug invalid response
-        message.error('Invalid products data received');
+        console.error('Invalid products response structure');
         setProducts([]);
         setCategoryFilters([]);
       }
-    } catch (err) {
-      console.error('Error loading products:', err);
-      message.error(err.message || 'Failed to load products');
+    } catch (error) {
+      console.error('Error loading products:', error);
       setProducts([]);
       setCategoryFilters([]);
     }
@@ -222,7 +234,7 @@ useEffect(() => {
                     }}
                   >
                     <img 
-                      src={typeof image === 'string' ? image : image.url} 
+                      src={image} 
                       alt={`${product.name} ${index + 1}`}
                       className="absolute inset-0 w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                     />
@@ -239,7 +251,7 @@ useEffect(() => {
                 }}
               >
                 <img 
-                  src={typeof product.image === 'string' ? product.image : product.image.url}
+                  src={product.image}
                   alt={product.name}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -341,46 +353,15 @@ useEffect(() => {
           render={(price) => price !== undefined && price !== null ? `${price.toFixed(2)}` : 'N/A'}
         />
         <Table.Column 
-          title="Posted Time" 
-          dataIndex="createdAt" 
-          key="postedTime"
-          render={(timestamp) => {
-            if (!timestamp) return 'N/A';
-            try {
-              const date = new Date(timestamp);
-              return date.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              });
-            } catch (err) {
-              console.error('Error formatting time:', err);
-              return 'Invalid Time';
-            }
-          }}
+          title="Posted Date" 
+          dataIndex="postedDate" 
+          key="postedDate"
+          sorter={(a, b) => new Date(a.postedDate) - new Date(b.postedDate)}
         />
         <Table.Column 
-          title="Posted Date" 
-          dataIndex="createdAt" 
-          key="postedDate"
-          render={(timestamp) => {
-            if (!timestamp) return 'N/A';
-            try {
-              const date = new Date(timestamp);
-              return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              });
-            } catch (err) {
-              console.error('Error formatting date:', err);
-              return 'Invalid Date';
-            }
-          }}
-          sorter={(a, b) => {
-            if (!a.createdAt || !b.createdAt) return 0;
-            return new Date(a.createdAt) - new Date(b.createdAt);
-          }}
+          title="Posted Time" 
+          dataIndex="postedTime" 
+          key="postedTime"
         />
         <Table.Column 
           title="Stock" 

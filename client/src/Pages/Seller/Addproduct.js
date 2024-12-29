@@ -30,57 +30,64 @@ const AddProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate required fields
-    if (!formData.name || !formData.price || !formData.category) {
-      setError('Name, price, and category are required.');
-      return;
-    }
-
-    // Validate price is a number
-    if (isNaN(formData.price)) {
-      setError('Price must be a valid number.');
-      return;
-    }
-
-    const productData = new FormData();
-    
-    // Append required fields first
-    productData.append('name', formData.name);
-    productData.append('price', formData.price);
-    productData.append('categoryId', formData.category);
-    
-    // Append optional fields if they exist
-    if (formData.subcategory) productData.append('subcategoryId', formData.subcategory);
-    if (formData.description) productData.append('description', formData.description);
-    if (formData.quantity) productData.append('quantity', formData.quantity);
-    if (formData.brand) productData.append('brand', formData.brand);
-    if (formData.color) productData.append('color', formData.color);
-    if (formData.warranty) productData.append('warranty', formData.warranty);
-
-    // Append each image file with the correct field name
-    images.forEach((image) => {
-      productData.append('images', image);
-    });
+    setLoading(true);
+    setError(null);
 
     try {
-      setLoading(true);
-      const response = await createProduct(productData);
-      
-      if (response.success) {
-        message.success('Product created successfully!');
-        navigate('/seller/productList');
-      } else {
-        const errorMessage = response.message || 'Failed to create product';
-        message.error(errorMessage);
-        setError(errorMessage);
+      // Validate required fields
+      if (!formData.name || !formData.category || !formData.price) {
+        setError('Please fill in all required fields: Name, Category, and Price');
+        setLoading(false);
+        return;
       }
+
+      // Create FormData
+      const productData = new FormData();
+      productData.append('name', formData.name);
+      productData.append('description', formData.description);
+      productData.append('price', formData.price);
+      productData.append('quantity', formData.quantity);
+      productData.append('categoryId', formData.category);
+      productData.append('subcategoryId', formData.subcategory);
+      productData.append('brand', formData.brand);
+      productData.append('color', formData.color);
+      productData.append('warranty', formData.warranty);
+
+      // Append images
+      if (images && images.length > 0) {
+        images.forEach((image, index) => {
+          productData.append('images', image);
+        });
+      }
+
+      console.log('Submitting Product Data:');
+      for (let [key, value] of productData.entries()) {
+        console.log(`${key}:`, value);
+      }
+
+      // Call create product service
+      const response = await createProduct(productData);
+
+      // Handle successful product creation
+      console.log('Product Created Successfully:', response);
+      setLoading(false);
+      
+      // Optional: Reset form or navigate to product list
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        quantity: '', 
+        category: '',
+        subcategory: '',
+        brand: '',
+        color: '',
+        warranty: ''
+      });
+      navigate('/seller/productList');
     } catch (err) {
-      console.error('Error creating product:', err);
-      const errorMessage = err.message || 'An unexpected error occurred';
-      message.error(errorMessage);
-      setError(errorMessage);
-    } finally {
+      console.error('Product Creation Error:', err);
+      setError(err.message || 'Failed to create product. Please try again.');
       setLoading(false);
     }
   };
@@ -126,12 +133,47 @@ const AddProduct = () => {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     
+    if (files.length > 5) {
+      message.error('You can only upload up to 5 images');
+      return;
+    }
+    
     // Update the images state with the actual files
-    setImages(files);
+    setImages(prevImages => {
+      const newImages = [...prevImages, ...files];
+      if (newImages.length > 5) {
+        message.warning('Only the first 5 images will be used');
+        return newImages.slice(0, 5);
+      }
+      return newImages;
+    });
     
     // Create preview URLs
-    const previewUrls = files.map(file => URL.createObjectURL(file));
-    setImagePreviewUrls(previewUrls);
+    const newPreviewUrls = files.map(file => URL.createObjectURL(file));
+    setImagePreviewUrls(prevUrls => {
+      const combinedUrls = [...prevUrls, ...newPreviewUrls];
+      if (combinedUrls.length > 5) {
+        // Clean up unused URLs
+        newPreviewUrls.slice(5).forEach(url => URL.revokeObjectURL(url));
+        return combinedUrls.slice(0, 5);
+      }
+      return combinedUrls;
+    });
+  };
+
+  const handleRemoveImage = (index) => {
+    setImages(prevImages => {
+      const newImages = [...prevImages];
+      newImages.splice(index, 1);
+      return newImages;
+    });
+
+    setImagePreviewUrls(prevUrls => {
+      const newUrls = [...prevUrls];
+      URL.revokeObjectURL(newUrls[index]); // Clean up the URL
+      newUrls.splice(index, 1);
+      return newUrls;
+    });
   };
 
   return (
@@ -281,30 +323,40 @@ const AddProduct = () => {
             </div>
 
             {/* Image Upload */}
-            <div className="mb-4">
+            <div className="col-span-2 mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
-                Product Images*
+                Product Images (Up to 5)
               </label>
               <input
                 type="file"
+                accept="image/*"
                 multiple
                 onChange={handleImageChange}
-                accept="image/*"
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
-                required
               />
               {imagePreviewUrls.length > 0 && (
-                <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="mt-4 grid grid-cols-5 gap-4">
                   {imagePreviewUrls.map((url, index) => (
-                    <img
-                      key={index}
-                      src={url}
-                      alt="Preview"
-                      className="w-32 h-32 object-cover rounded-lg"
-                    />
+                    <div key={index} className="relative">
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
+              <p className="text-sm text-gray-500 mt-1">
+                {5 - imagePreviewUrls.length} image slots remaining
+              </p>
             </div>
           </div>
 

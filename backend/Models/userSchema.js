@@ -9,6 +9,13 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Name is required'],
     trim: true,
     default: '',
+    validate: {
+      validator: function(v) {
+        // Allow names with at least one non-whitespace character
+        return v.trim().length > 0;
+      },
+      message: 'Name must contain at least one non-whitespace character'
+    }
   },
   email: {
     type: String,
@@ -20,7 +27,8 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
   },
   password: {
     type: String,
@@ -37,9 +45,9 @@ const userSchema = new mongoose.Schema({
 
   // Address Information
   address: {
-    street: String,
-    city: String,
-    state: String,
+    type: String,
+    trim: true,
+    default: ''
   },
 
   // Role and Status
@@ -65,9 +73,16 @@ const userSchema = new mongoose.Schema({
     },
     approval:{
       type:String,
-      enu:['approved','rejected'],
+      enum:['approved','rejected'],
       default:'rejected'
-      
+    }
+  },
+
+  // Admin-specific Details
+  adminDetails: {
+    department: {
+      type: String,
+      trim: true
     }
   },
 
@@ -86,10 +101,42 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// Custom error handling middleware
+userSchema.post('save', function(error, doc, next) {
+  if (error.name === 'ValidationError') {
+    const errors = Object.keys(error.errors).reduce((acc, key) => {
+      acc[key] = error.errors[key].message;
+      return acc;
+    }, {});
+    
+    const customError = new Error('Validation Failed');
+    customError.name = 'ValidationError';
+    customError.errors = errors;
+    next(customError);
+  } else {
+    next(error);
+  }
+});
+
 // Password hashing middleware
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+// Modify pre-save hook to handle empty name and address type coercion
+userSchema.pre('save', function(next) {
+  // Ensure name is not just whitespace
+  if (!this.name || this.name.trim() === '') {
+    this.name = 'Unnamed User';
+  }
+  
+  // Ensure address is a string
+  if (this.address && typeof this.address !== 'string') {
+    this.address = String(this.address);
+  }
+  
   next();
 });
 

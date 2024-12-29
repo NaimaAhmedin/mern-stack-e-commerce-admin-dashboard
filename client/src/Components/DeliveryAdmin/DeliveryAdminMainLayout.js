@@ -1,36 +1,118 @@
-import React, { useState } from 'react';
-import { MenuFoldOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import { MdDashboard, MdOutlineLocalShipping,  MdOutlinePending, MdOutlineSmsFailed } from 'react-icons/md';
-import { Layout, Menu, Dropdown, theme } from 'antd';
-import {  AiOutlineShoppingCart, AiOutlineUser } from 'react-icons/ai';
-import { IoMdNotifications } from 'react-icons/io';
-import { Outlet } from 'react-router-dom';
-import { MdCategory } from "react-icons/md";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Layout, Menu, theme, Dropdown } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { useNavigate, Outlet } from 'react-router-dom';
+import { MdDashboard } from 'react-icons/md';
+import { IoSettingsSharp } from 'react-icons/io5';
+import { CgProfile } from 'react-icons/cg';
+import { MdOutlineControlCamera } from 'react-icons/md';
+import { IoMdNotifications, IoMdPerson } from 'react-icons/io';
+import { MdOutlineLocalShipping, MdOutlinePending, MdOutlineSmsFailed } from 'react-icons/md';
+import { AiOutlineShoppingCart, AiOutlineUser } from 'react-icons/ai';
 import { TbCategoryPlus } from "react-icons/tb";
-import { IoSettingsSharp } from "react-icons/io5";
-import { CgProfile } from "react-icons/cg";
-import { MdOutlineControlCamera } from "react-icons/md";
-import { FaClipboardList, FaUser} from "react-icons/fa"; // Icon for Sellers
+import { MdCategory } from "react-icons/md";
+import { FaClipboardList, FaUser } from "react-icons/fa";
 import { GrCompliance } from 'react-icons/gr';
 
 const { Header, Sider, Content } = Layout;
 
 const DeliveryAdminMainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '',
+    profileImage: null,
+    department: ''
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
   const navigate = useNavigate();
 
-  // Dropdown menu for profile options
+  useEffect(() => {
+    const fetchDeliveryAdminProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/');
+          return;
+        }
+
+        const response = await axios.get('/api/users/delivery-admin/menu-profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        // Update profile data
+        setProfileData({
+          name: response.data.data.name || '',
+          email: response.data.data.email || '',
+          profileImage: response.data.data.profileImage,
+          department: response.data.data.department || ''
+        });
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching delivery admin profile:', err);
+        console.error('Full error details:', {
+          message: err.message,
+          response: err.response ? {
+            status: err.response.status,
+            data: err.response.data,
+            headers: err.response.headers
+          } : 'No response',
+          request: err.request ? 'Request exists' : 'No request',
+          config: err.config ? {
+            url: err.config.url,
+            method: err.config.method,
+            headers: err.config.headers
+          } : 'No config'
+        });
+        setError(err);
+        setIsLoading(false);
+        
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/');
+        }
+      }
+    };
+
+    fetchDeliveryAdminProfile();
+  }, [navigate]);
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading admin profile...</p>
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error) {
+    return (
+      <div className="error-container">
+        <p>Error loading profile. Please try again later.</p>
+        <button onClick={() => window.location.reload()}>Reload</button>
+      </div>
+    );
+  }
+
+  // Profile dropdown menu
   const profileMenu = (
     <Menu
       onClick={({ key }) => {
         if (key === "signout") {
+          localStorage.removeItem('token');
           navigate('/');
         } else if (key === "profile") {
-          navigate('/DeliveryAdmin/settings/profile');
+          navigate('settings/profile');
         }
       }}
       items={[
@@ -151,7 +233,7 @@ const DeliveryAdminMainLayout = () => {
           }}
         >
           {React.createElement(
-            MenuFoldOutlined,
+            collapsed ? MenuUnfoldOutlined : MenuFoldOutlined,
             {
               className: "trigger",
               onClick: () => setCollapsed(!collapsed),
@@ -164,14 +246,30 @@ const DeliveryAdminMainLayout = () => {
             </div>
             <Dropdown overlay={profileMenu} trigger={['click']}>
               <div className="d-flex gap-3 align-items-center" style={{ cursor: 'pointer' }}>
-                <img
-                  src="https://i.pinimg.com/originals/d9/0b/e3/d90be382685a71af0369e49b352f0ba1.jpg"
-                  alt="Profile"
-                  style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-                />
+                {profileData.profileImage ? (
+                  <img
+                    src={profileData.profileImage}
+                    alt="Profile"
+                    style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                  />
+                ) : (
+                  <div 
+                    style={{ 
+                      width: '32px', 
+                      height: '32px', 
+                      borderRadius: '50%', 
+                      background: '#e0e0e0', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    <IoMdPerson size={20} color="#666" />
+                  </div>
+                )}
                 <div>
-                  <h5 className="mb-0">Delivery Admin</h5>
-                  <p className="mb-0">deliveryadmin@gmail.com</p>
+                  {profileData.name && <h5 className="mb-0">{profileData.name}</h5>}
+                  {profileData.email && <p className="mb-0">{profileData.email}</p>}
                 </div>
               </div>
             </Dropdown>

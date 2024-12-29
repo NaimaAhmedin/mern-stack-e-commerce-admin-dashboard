@@ -4,13 +4,21 @@ const generateToken = require('../utils/generateToken');
 // Register User
 exports.registerUser = async (req, res, next) => {
   const { 
-    name, 
+    name = req.body.username, // Use username as fallback for name
     email, 
     password, 
     confirmPassword, 
     role,
     phone = ''
   } = req.body;
+
+  // Validate name is provided
+  if (!name) {
+    return res.status(400).json({
+      success: false,
+      message: 'Name or username is required'
+    });
+  }
 
   // Check if the current user has permission to create the specified role
   const currentUserRole = req.user ? req.user.role : null;
@@ -44,7 +52,25 @@ exports.registerUser = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(error);
+    // Log the full error for debugging
+    console.error('User Registration Error:', error);
+
+    // Send a more informative error response
+    if (error.name === 'ValidationError') {
+      const errorMessages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Validation Error',
+        errors: errorMessages
+      });
+    }
+
+    // Generic error handler
+    res.status(500).json({
+      success: false,
+      message: 'Error registering user',
+      error: error.message
+    });
   }
 };
 

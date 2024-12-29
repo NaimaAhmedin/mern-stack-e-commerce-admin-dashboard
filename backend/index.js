@@ -9,6 +9,7 @@ const mainRoutes = require('./routes/roleBasedRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const errorMiddleware = require('./middlewares/errorMiddleware');
 const path = require('path');
+const productRoutes = require('./routes/productRoutes');
 
 // Load environment variables
 dotenv.config({ path: './.env' });
@@ -37,6 +38,7 @@ app.use('/api/auth', authRoutes); // Authentication routes
 app.use('/api/users', userRoutes); // User routes
 app.use('/api/routes', mainRoutes);
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/products', productRoutes); // Add product routes
 
 // Test Route
 app.get('/', (req, res) => {

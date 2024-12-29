@@ -1,36 +1,97 @@
-import React, { useState } from 'react';
-import { MenuFoldOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import { MdDashboard } from 'react-icons/md';
-import { Layout, Menu, Dropdown, theme } from 'antd';
-import { AiOutlineProduct } from 'react-icons/ai';
-import { IoMdNotifications } from 'react-icons/io';
-import { Outlet } from 'react-router-dom';
-import { TbCategoryPlus } from "react-icons/tb";
-import { MdOutlineCampaign } from "react-icons/md";
-import { IoSettingsSharp } from "react-icons/io5";
-import { CgProfile } from "react-icons/cg";
-import { MdOutlineControlCamera } from "react-icons/md";
-import { MdOutlineContentPasteSearch } from "react-icons/md";
-import { FaUserTie } from "react-icons/fa"; // Icon for Sellers
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Layout, Menu, theme, Dropdown } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { useNavigate, Outlet } from 'react-router-dom';
+import { MdDashboard, MdOutlineContentPasteSearch } from 'react-icons/md';
+import { IoSettingsSharp } from 'react-icons/io5';
+import { CgProfile } from 'react-icons/cg';
+import { MdOutlineControlCamera } from 'react-icons/md';
+import { FcMoneyTransfer } from 'react-icons/fc';
+import { IoMdNotifications, IoMdPerson } from 'react-icons/io';
 
-const { Header, Sider, Content } = Layout;
-
-const ContentadminMainLayout = () => {
+const ContentAdminMainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '',
+    profileImage: null,
+    department: ''
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
   const navigate = useNavigate();
 
-  // Dropdown menu for profile options
+  useEffect(() => {
+    const fetchContentAdminProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/');
+          return;
+        }
+
+        const response = await axios.get('/api/users/content-admin/menu-profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        // Update profile data
+        setProfileData({
+          name: response.data.data.name || '',
+          email: response.data.data.email || '',
+          profileImage: response.data.data.profileImage,
+          department: response.data.data.department || ''
+        });
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching content admin profile:', err);
+        setError(err);
+        setIsLoading(false);
+        
+        if (err.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/');
+        }
+      }
+    };
+
+    fetchContentAdminProfile();
+  }, [navigate]);
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading admin profile...</p>
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error) {
+    return (
+      <div className="error-container">
+        <p>Error loading profile. Please try again later.</p>
+        <button onClick={() => window.location.reload()}>Reload</button>
+      </div>
+    );
+  }
+
+  // Profile dropdown menu
   const profileMenu = (
     <Menu
       onClick={({ key }) => {
         if (key === "signout") {
+          localStorage.removeItem('token');
           navigate('/');
         } else if (key === "profile") {
-          navigate('/Content-Admin/settings/profile');
+          navigate('settings/profile');
         }
       }}
       items={[
@@ -50,7 +111,7 @@ const ContentadminMainLayout = () => {
 
   return (
     <Layout>
-      <Sider trigger={null} collapsible collapsed={collapsed}>
+      <Layout.Sider trigger={null} collapsible collapsed={collapsed}>
         <div className="logo">
           <h2 className="text-white fs-5 text-center py-4 mb-0">Markato</h2>
         </div>
@@ -72,36 +133,19 @@ const ContentadminMainLayout = () => {
             {
               key: "content-management",
               icon: <MdOutlineContentPasteSearch className="fs-4" />,
-              label: 'Contents',
+              label: 'Content Management',
               children: [
                 {
-                  key: "ProductList",
-                  icon: <MdOutlineControlCamera className="fs-4" />,
-                  label: 'Product List',
+                  key: "content-list",
+                  icon: <MdOutlineContentPasteSearch className="fs-4" />,
+                  label: 'Content List',
                 },
                 {
-                  key: "SellerList",
-                  icon: <FaUserTie className="fs-4" />,
-                  label: 'Sellers List',
+                  key: "add-content",
+                  icon: <MdOutlineContentPasteSearch className="fs-4" />,
+                  label: 'Add Content',
                 },
               ],
-            },            
-            {
-              key: "promotion-management",
-              icon: <AiOutlineProduct className="fs-4" />,
-              label: 'Promotions',
-              children: [
-                {
-                  key: "promotion",
-                  icon: <MdOutlineCampaign className="fs-4" />,
-                  label: 'Promotion',
-                },
-              ],
-            },
-            {
-              key: "category",
-              icon: <TbCategoryPlus className="fs-4" />,
-              label: 'Categories',
             },
             {
               key: "settings",
@@ -113,13 +157,18 @@ const ContentadminMainLayout = () => {
                   icon: <CgProfile className="fs-4" />,
                   label: 'Profile',
                 },
+                {
+                  key: "settings/payment",
+                  icon: <FcMoneyTransfer className="fs-4" />,
+                  label: 'Payment Method',
+                },
               ],
             },
           ]}
         />
-      </Sider>
+      </Layout.Sider>
       <Layout>
-        <Header
+        <Layout.Header
           className="d-flex justify-content-between ps-3 pe-5"
           style={{
             padding: 0,
@@ -127,7 +176,7 @@ const ContentadminMainLayout = () => {
           }}
         >
           {React.createElement(
-            MenuFoldOutlined,
+            collapsed ? MenuUnfoldOutlined : MenuFoldOutlined,
             {
               className: "trigger",
               onClick: () => setCollapsed(!collapsed),
@@ -140,20 +189,36 @@ const ContentadminMainLayout = () => {
             </div>
             <Dropdown overlay={profileMenu} trigger={['click']}>
               <div className="d-flex gap-3 align-items-center" style={{ cursor: 'pointer' }}>
-                <img
-                  src="https://i.pinimg.com/originals/d9/0b/e3/d90be382685a71af0369e49b352f0ba1.jpg"
-                  alt="Profile"
-                  style={{ width: '32px', height: '32px', borderRadius: '50%' }}
-                />
+                {profileData.profileImage ? (
+                  <img
+                    src={profileData.profileImage}
+                    alt="Profile"
+                    style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                  />
+                ) : (
+                  <div 
+                    style={{ 
+                      width: '32px', 
+                      height: '32px', 
+                      borderRadius: '50%', 
+                      background: '#e0e0e0', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center' 
+                    }}
+                  >
+                    <IoMdPerson size={20} color="#666" />
+                  </div>
+                )}
                 <div>
-                  <h5 className="mb-0">Content Admin</h5>
-                  <p className="mb-0">contentadmin@gmail.com</p>
+                  {profileData.name && <h5 className="mb-0">{profileData.name}</h5>}
+                  {profileData.email && <p className="mb-0">{profileData.email}</p>}
                 </div>
               </div>
             </Dropdown>
           </div>
-        </Header>
-        <Content
+        </Layout.Header>
+        <Layout.Content
           style={{
             margin: '24px 16px',
             padding: 24,
@@ -163,10 +228,10 @@ const ContentadminMainLayout = () => {
           }}
         >
           <Outlet />
-        </Content>
+        </Layout.Content>
       </Layout>
     </Layout>
   );
 };
 
-export default ContentadminMainLayout;
+export default ContentAdminMainLayout;

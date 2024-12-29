@@ -19,7 +19,7 @@ const EditProduct = () => {
     color: '',
     warranty: ''
   });
-  
+
   const [images, setImages] = useState([]);
   const [currentImages, setCurrentImages] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -60,8 +60,8 @@ const EditProduct = () => {
           description: productData.description || '',
           price: productData.price || '',
           stock: productData.quantity || productData.amount || '',
-          category: productData.categoryId?._id || productData.category || '', 
-          subcategory: productData.subcategoryId?._id || productData.subcategory || '', 
+          category: productData.categoryId?._id || productData.category || '',
+          subcategory: productData.subcategoryId?._id || productData.subcategory || '',
           brand: productData.brand || '',
           color: productData.color || '',
           warranty: productData.warranty || ''
@@ -71,7 +71,7 @@ const EditProduct = () => {
         if (productData.images && Array.isArray(productData.images)) {
           console.log('Setting current images:', productData.images);
           // Handle both string URLs and object URLs
-          const imageUrls = productData.images.map(img => 
+          const imageUrls = productData.images.map(img =>
             typeof img === 'string' ? img : img.url || img
           );
           setCurrentImages(imageUrls);
@@ -94,7 +94,7 @@ const EditProduct = () => {
 
       } catch (err) {
         console.error('Error:', err);
-        
+
         // More detailed error handling
         if (err.name === 'AbortError') {
           message.error('Request timed out. Please check your internet connection.');
@@ -109,14 +109,14 @@ const EditProduct = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'category') {
       const selectedCategory = categories.find(cat => cat._id === value);
       if (selectedCategory) {
         // Update subcategories based on the selected category
         const newSubcategories = selectedCategory.subcategories || [];
         setSubcategories(newSubcategories);
-        
+
         // Update form data and reset subcategory
         setFormData(prev => ({
           ...prev,
@@ -151,118 +151,65 @@ const EditProduct = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-
-    // Validate required fields
-    if (!formData.name || !formData.price || !formData.category) {
-      message.error('Please fill in all required fields');
-      return;
-    }
-
-    // Prepare product data for update
-    const productUpdateData = {
-      name: formData.name,
-      price: Number(formData.price),
-      quantity: Number(formData.stock || 0),
-      category: formData.category,
-      subcategory: formData.subcategory || undefined,
-      brand: formData.brand || undefined,
-      color: formData.color || undefined,
-      warranty: formData.warranty ? Number(formData.warranty) : undefined,
-      description: formData.description || undefined
-    };
-
-    // Validate price and quantity
-    if (isNaN(productUpdateData.price) || productUpdateData.price < 0) {
-      message.error('Price must be a valid positive number');
-      return;
-    }
-
-    if (isNaN(productUpdateData.quantity) || productUpdateData.quantity < 0) {
-      message.error('Quantity must be a valid positive number');
-      return;
-    }
+    setLoading(true);
+    setError('');
 
     try {
-      setLoading(true);
-      
-      // Upload new images to Cloudinary
-      let cloudinaryUrls = [];
-      if (images.length > 0) {
-        try {
-          const uploadPromises = images.map(async (image) => {
-            // Use your Cloudinary cloud name
-            const CLOUDINARY_CLOUD_NAME = 'dmauyxqhi';
-            const CLOUDINARY_UPLOAD_PRESET = 'markato-E-Commerce';
+      // Validate required fields
+      if (!formData.name || !formData.price || !formData.category) {
+        setError('Please fill in all required fields');
+        setLoading(false);
+        return;
+      }
 
-            const formData = new FormData();
-            formData.append('file', image.file);
-            formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-            formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
-            
-            try {
-              const response = await fetch(
-                `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, 
-                {
-                  method: 'POST',
-                  body: formData
-                }
-              );
-              
-              if (!response.ok) {
-                const errorData = await response.json();
-                console.error('Cloudinary upload error details:', errorData);
-                throw new Error(`Image upload failed: ${JSON.stringify(errorData)}`);
-              }
-              
-              const result = await response.json();
-              console.log('Cloudinary upload success:', result);
-              return result.secure_url;
-            } catch (error) {
-              console.error('Error uploading to Cloudinary:', error);
-              throw error;
-            }
-          });
-          
-          cloudinaryUrls = await Promise.all(uploadPromises);
-          console.log('All Cloudinary uploads successful:', cloudinaryUrls);
-        } catch (error) {
-          console.error('Error uploading images:', error);
-          message.error('Failed to upload one or more images');
-          throw error;
+      // Create FormData for new images
+      const newFormData = new FormData();
+      images.forEach(img => {
+        newFormData.append('images', img.file);
+      });
+
+      // Prepare product data
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: Number(formData.price),
+        quantity: Number(formData.stock || formData.quantity),
+        category: formData.category,
+        subcategory: formData.subcategory,
+        brand: formData.brand,
+        color: formData.color,
+        warranty: Number(formData.warranty),
+      };
+
+      // Handle existing images
+      const existingImages = currentImages.map(img => {
+        if (typeof img === 'string') {
+          // If img is just a URL string, create an object
+          return {
+            url: img,
+            public_id: img.split('/').pop().split('.')[0] // Extract public_id from URL
+          };
         }
-      }
+        return img; // If it's already an object with public_id and url
+      });
 
-      // Combine current and new image URLs
-      const allImageUrls = [
-        ...(currentImages || []),
-        ...cloudinaryUrls
-      ];
+      // Add existing images to product data
+      productData.existingImages = existingImages;
 
-      console.log('All image URLs:', allImageUrls);
+      console.log('Product Update Data:', productData);
 
-      // Add images to product update data
-      productUpdateData.images = allImageUrls;
+      // Upload product
+      const response = await updateProduct(id, productData, newFormData);
 
-      console.log('Product Update Data:', productUpdateData);
-
-      // Call update product service
-      const response = await updateProduct(id, productUpdateData);
-      
       if (response.success) {
-        message.success(response.message || 'Product updated successfully!');
-        navigate('/seller/ProductList');
+        message.success('Product updated successfully');
+        navigate('/seller/ProductList');  
       } else {
-        // More detailed error handling
-        const errorMessage = response.message || 'Failed to update product';
-        message.error(errorMessage);
-        setError(errorMessage);
+        setError(response.message || 'Failed to update product');
       }
-    } catch (err) {
-      console.error('Error updating product:', err);
-      const errorMessage = err.message || 'An unexpected error occurred';
-      message.error(errorMessage);
-      setError(errorMessage);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      setError(error.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -310,8 +257,8 @@ const EditProduct = () => {
               >
                 <option value="">Select Category</option>
                 {categories.map(category => (
-                  <option 
-                    key={category._id} 
+                  <option
+                    key={category._id}
                     value={category._id}
                   >
                     {category.name}
@@ -334,8 +281,8 @@ const EditProduct = () => {
               >
                 <option value="">Select Subcategory</option>
                 {subcategories.map(subcategory => (
-                  <option 
-                    key={subcategory._id} 
+                  <option
+                    key={subcategory._id}
                     value={subcategory._id}
                   >
                     {subcategory.name}
@@ -432,7 +379,7 @@ const EditProduct = () => {
                 multiple
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
               />
-              
+
               {/* Display current images */}
               {currentImages.length > 0 && (
                 <div className="mt-4">

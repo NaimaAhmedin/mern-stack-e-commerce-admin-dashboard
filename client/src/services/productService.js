@@ -1,4 +1,4 @@
-const API_URL = '/api/routes/products'; // Uses proxy to direct requests to the backend
+const API_URL = '/api/products'; // Updated to match backend route
 
 // Fetch all products
 // export const getProducts = async () => {
@@ -48,6 +48,19 @@ export const getProducts = async () => {
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
+    // Ensure images are in the correct format
+    if (data.data) {
+      data.data = data.data.map(product => ({
+        ...product,
+        images: product.images && product.images.length > 0 
+          ? product.images.map(img => ({
+              url: typeof img === 'string' ? img : img.url,
+              public_id: typeof img === 'string' ? null : img.public_id
+            }))
+          : []
+      }));
+    }
+
     return data; // Return the entire response
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -59,8 +72,9 @@ export const getProducts = async () => {
 export const getProduct = async (id) => {
   try {
     const token = localStorage.getItem("token");
+
     if (!token) {
-      throw new Error("No authentication token found");
+      throw new Error('No authentication token found');
     }
 
     const response = await fetch(`${API_URL}/${id}`, {
@@ -72,17 +86,21 @@ export const getProduct = async (id) => {
       credentials: 'include'
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
-    
-    const productData = await response.json();
-    
-    // Add additional logging for debugging
-    console.log('Fetched Product Data:', productData);
-    
-    return productData;
+
+    // Ensure images are in the correct format
+    if (data.images) {
+      data.images = data.images.map(img => ({
+        url: typeof img === 'string' ? img : img.url,
+        public_id: typeof img === 'string' ? null : img.public_id
+      }));
+    }
+
+    return data;
   } catch (error) {
     console.error("Error fetching product:", error);
     throw error;
@@ -97,6 +115,20 @@ export const createProduct = async (productData) => {
       throw new Error("No authentication token found");
     }
 
+    // Log details about the request
+    console.log('=== CREATE PRODUCT REQUEST ===');
+    console.log('Token:', token ? 'Token present' : 'No token');
+    
+    // If productData is FormData, log its contents
+    if (productData instanceof FormData) {
+      console.log('FormData Contents:');
+      for (let [key, value] of productData.entries()) {
+        console.log(`${key}:`, value);
+      }
+    } else {
+      console.log('Product Data:', productData);
+    }
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -107,11 +139,24 @@ export const createProduct = async (productData) => {
       body: productData
     });
 
-    const data = await response.json();
+    console.log('Response Status:', response.status);
+    console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
+
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      throw new Error('Unexpected server response format');
+    }
+
     console.log('Server Response:', data);
 
     if (!response.ok) {
-      throw new Error(data.message || `Error creating product`);
+      throw new Error(data.message || `Error creating product: ${response.status}`);
     }
 
     return data;
@@ -122,84 +167,51 @@ export const createProduct = async (productData) => {
 };
 
 // Update an existing product
-export const updateProduct = async (id, data) => {
+export const updateProduct = async (id, data, formData) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      throw new Error("No authentication token found");
+      throw new Error('No authentication token found');
     }
 
-    // If data is a FormData, convert it to a plain object
-    const productData = data instanceof FormData 
-      ? Object.fromEntries(data.entries()) 
-      : data;
-
-    console.log('Updating product with ID:', id);
-    console.log('Product Data:', productData);
-
-    // Validate required fields
-    const requiredFields = ['name', 'price', 'category'];
-    const missingFields = requiredFields.filter(field => 
-      !productData[field] || productData[field] === ''
-    );
-
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+    // If formData is not provided, create a new one
+    if (!formData) {
+      formData = new FormData();
     }
 
-    // Prepare data for backend
-    const requestData = {
-      name: productData.name,
-      price: Number(productData.price),
-      quantity: Number(productData.stock || productData.quantity || 0),
-      categoryId: productData.category,
-      subcategoryId: productData.subcategory || undefined,
-      brand: productData.brand || undefined,
-      color: productData.color || undefined,
-      warranty: productData.warranty ? Number(productData.warranty) : undefined,
-      description: productData.description || undefined,
-      images: productData.images || undefined
-    };
+    // Append text fields
+    Object.keys(data).forEach(key => {
+      if (key !== 'images' && key !== 'existingImages') {
+        formData.append(key, data[key]);
+      }
+    });
 
-    // Validate price and quantity
-    if (isNaN(requestData.price) || requestData.price < 0) {
-      throw new Error('Price must be a valid positive number');
-    }
-
-    if (isNaN(requestData.quantity) || requestData.quantity < 0) {
-      throw new Error('Quantity must be a valid positive number');
+    // Handle existing images
+    if (data.existingImages && data.existingImages.length > 0) {
+      formData.append('existingImages', JSON.stringify(data.existingImages));
     }
 
     const response = await fetch(`${API_URL}/${id}`, {
       method: "PUT",
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+      headers: { 
+        "Authorization": `Bearer ${token}`
       },
       credentials: 'include',
-      body: JSON.stringify(requestData)
+      body: formData
     });
 
     console.log('Update Response Status:', response.status);
-
-    const result = await response.json();
-    console.log('Update Response:', result);
+    const responseData = await response.json();
+    console.log('Update Response:', responseData);
 
     if (!response.ok) {
-      throw new Error(result.message || 'Failed to update product');
+      throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
     }
 
-    return { 
-      success: true, 
-      data: result.data, 
-      message: result.message || 'Product updated successfully' 
-    };
+    return responseData;
   } catch (error) {
-    console.error("Error in updateProduct:", error);
-    return { 
-      success: false, 
-      message: error.message || 'An unexpected error occurred'
-    };
+    console.error("Error updating product:", error);
+    throw error;
   }
 };
 
@@ -240,36 +252,58 @@ export const deleteProduct = async (id) => {
 // Fetch products for a seller
 export const getSellerProducts = async () => {
   try {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
+
     if (!token) {
       throw new Error('No authentication token found');
     }
-
-    const response = await fetch('/api/routes/products', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+    
+    const response = await fetch(`${API_URL}/seller`, {
+      method: "GET",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      credentials: 'include'
     });
 
     const responseData = await response.json();
-    console.log('Seller Products Response Status:', response.status);
     console.log('Seller Products Response:', responseData);
 
     if (!response.ok) {
-      throw new Error(responseData.message || 'Error fetching seller products');
+      throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
     }
+
+    // Ensure data is always an array
+    const productsData = responseData.data || responseData;
+    
+    // Process each product
+    const processedProducts = (Array.isArray(productsData) ? productsData : []).map(product => ({
+      ...product,
+      images: product.images && Array.isArray(product.images) 
+        ? product.images.map(img => 
+            typeof img === 'string' 
+              ? img 
+              : (img.url || null)
+          ).filter(Boolean)
+        : [],
+      image: product.images && product.images.length > 0 
+        ? (typeof product.images[0] === 'string' 
+            ? product.images[0] 
+            : (product.images[0].url || null))
+        : null
+    }));
 
     return {
       success: true,
-      data: responseData.data,
-      message: responseData.message || 'Seller products fetched successfully'
+      data: processedProducts,
+      message: responseData.message || 'Products fetched successfully'
     };
   } catch (error) {
     console.error('Error fetching seller products:', error);
     return {
       success: false,
+      data: [],
       message: error.message || 'An unexpected error occurred'
     };
   }
