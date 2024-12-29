@@ -92,10 +92,7 @@ exports.createCategory = async (req, res) => {
 
     const newCategory = await Category.create({ 
       name, 
-      image: {
-        public_id: cloudinaryResponse.public_id,
-        url: cloudinaryResponse.secure_url
-      }
+      image: cloudinaryResponse.secure_url
     });
 
     res.status(201).json({ 
@@ -130,11 +127,6 @@ exports.updateCategory = async (req, res) => {
 
     // Update image if a new file was uploaded
     if (req.file) {
-      // Delete existing image from Cloudinary if it exists
-      if (category.image && category.image.public_id) {
-        await cloudinary.uploader.destroy(category.image.public_id);
-      }
-
       // Upload new image to Cloudinary
       const cloudinaryResponse = await cloudinary.uploader.upload(req.file.path, {
         folder: 'categories',
@@ -144,10 +136,8 @@ exports.updateCategory = async (req, res) => {
         ]
       });
 
-      category.image = {
-        public_id: cloudinaryResponse.public_id,
-        url: cloudinaryResponse.secure_url
-      };
+      // Store only the secure URL
+      category.image = cloudinaryResponse.secure_url;
     }
 
     await category.save();
@@ -179,11 +169,6 @@ exports.deleteCategory = async (req, res) => {
     const category = await Category.findById(req.params.id);
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
-    }
-
-    // Delete image from Cloudinary if it exists
-    if (category.image && category.image.public_id) {
-      await cloudinary.uploader.destroy(category.image.public_id);
     }
 
     // Delete all subcategories of this category

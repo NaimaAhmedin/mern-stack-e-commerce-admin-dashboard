@@ -9,6 +9,10 @@ import { CgProfile } from 'react-icons/cg';
 import { MdOutlineControlCamera } from 'react-icons/md';
 import { FcMoneyTransfer } from 'react-icons/fc';
 import { IoMdNotifications, IoMdPerson } from 'react-icons/io';
+import { AiOutlineProduct } from 'react-icons/ai';
+import { TbCategoryPlus } from "react-icons/tb";
+import { MdOutlineCampaign } from "react-icons/md";
+import { FaUserTie } from "react-icons/fa"; // Icon for Sellers
 
 const ContentAdminMainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -124,7 +128,7 @@ const ContentAdminMainLayout = () => {
               navigate(key);
             }
           }}
-          items={[
+            items={[
             {
               key: "dashboard",
               icon: <MdDashboard className="fs-4" />,
@@ -133,19 +137,36 @@ const ContentAdminMainLayout = () => {
             {
               key: "content-management",
               icon: <MdOutlineContentPasteSearch className="fs-4" />,
-              label: 'Content Management',
+              label: 'Contents',
               children: [
                 {
-                  key: "content-list",
-                  icon: <MdOutlineContentPasteSearch className="fs-4" />,
-                  label: 'Content List',
+                  key: "ProductList",
+                  icon: <MdOutlineControlCamera className="fs-4" />,
+                  label: 'Product List',
                 },
                 {
-                  key: "add-content",
-                  icon: <MdOutlineContentPasteSearch className="fs-4" />,
-                  label: 'Add Content',
+                  key: "SellerList",
+                  icon: <FaUserTie className="fs-4" />,
+                  label: 'Sellers List',
                 },
               ],
+            },            
+            {
+              key: "promotion-management",
+              icon: <AiOutlineProduct className="fs-4" />,
+              label: 'Promotions',
+              children: [
+                {
+                  key: "promotion",
+                  icon: <MdOutlineCampaign className="fs-4" />,
+                  label: 'Promotion',
+                },
+              ],
+            },
+            {
+              key: "category",
+              icon: <TbCategoryPlus className="fs-4" />,
+              label: 'Categories',
             },
             {
               key: "settings",

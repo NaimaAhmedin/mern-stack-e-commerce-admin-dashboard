@@ -39,10 +39,7 @@ exports.createPromotion = asyncHandler(async (req, res) => {
 
     // Create promotion
     const promotion = await Promotion.create({
-      image: {
-        public_id: cloudinaryResponse.public_id,
-        url: cloudinaryResponse.secure_url
-      },
+      image: cloudinaryResponse.secure_url,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       link: link || '',
@@ -143,8 +140,10 @@ exports.updatePromotion = asyncHandler(async (req, res) => {
     // Update image if a new file is uploaded
     if (req.file) {
       // Delete existing image from Cloudinary if it exists
-      if (promotion.image && promotion.image.public_id) {
-        await cloudinary.uploader.destroy(promotion.image.public_id);
+      // Note: This assumes the image is a string URL now
+      if (promotion.image) {
+        // Optional: If you want to delete the old image from Cloudinary
+        // You'll need to extract the public_id from the URL if necessary
       }
 
       // Upload new image to Cloudinary
@@ -156,10 +155,8 @@ exports.updatePromotion = asyncHandler(async (req, res) => {
         ]
       });
 
-      promotion.image = {
-        public_id: cloudinaryResponse.public_id,
-        url: cloudinaryResponse.secure_url
-      };
+      // Store only the secure URL
+      promotion.image = cloudinaryResponse.secure_url;
     }
 
     await promotion.save();

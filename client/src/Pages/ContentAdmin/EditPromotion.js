@@ -44,8 +44,8 @@ const EditPromotion = () => {
         });
 
         // Set initial image preview
-        if (promotionData.image?.url) {
-          setImagePreview(promotionData.image.url);
+        if (promotionData.image) {
+          setImagePreview(promotionData.image);
         }
       } catch (error) {
         console.error('Failed to fetch promotion:', error);
@@ -71,7 +71,7 @@ const EditPromotion = () => {
       reader.readAsDataURL(file);
     } else {
       // If no file, reset to original image or null
-      setImagePreview(promotion?.image?.url || null);
+      setImagePreview(promotion?.image || null);
     }
   };
 

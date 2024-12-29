@@ -27,16 +27,7 @@ const productSchema = new mongoose.Schema({
   warranty: { type: Number, default: 0 },
   description: { type: String },
   images: {
-    type: [{
-      public_id: { 
-        type: String, 
-        required: true 
-      },
-      url: { 
-        type: String, 
-        required: true 
-      }
-    }],
+    type: [String],
     validate: [
       {
         validator: function(v) {

@@ -102,9 +102,9 @@ const Promotions = () => {
       dataIndex: 'image',
       key: 'image',
       render: (image) => (
-        image?.url ? (
+        image ? (
           <img 
-            src={image.url} 
+            src={image} 
             alt="Promotion" 
             style={{ 
               width: 100, 

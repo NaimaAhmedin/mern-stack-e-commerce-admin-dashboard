@@ -112,10 +112,8 @@ exports.createProduct = async (req, res) => {
           // Remove local file after upload
           fs.unlinkSync(file.path);
 
-          return {
-            public_id: result.public_id,
-            url: result.secure_url
-          };
+          // Return only the URL
+          return result.secure_url;
         } catch (uploadError) {
           console.error('Cloudinary upload error:', uploadError);
           // Remove local file in case of upload error
@@ -244,10 +242,8 @@ exports.updateProduct = async (req, res) => {
           // Remove local file after upload
           fs.unlinkSync(file.path);
 
-          return {
-            public_id: result.public_id,
-            url: result.secure_url
-          };
+          // Return only the URL
+          return result.secure_url;
         } catch (uploadError) {
           console.error('Cloudinary upload error:', uploadError);
           if (fs.existsSync(file.path)) {

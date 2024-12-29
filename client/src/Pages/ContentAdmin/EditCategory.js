@@ -21,10 +21,10 @@ const EditCategory = () => {
           const categoryData = response.data;
           setCategory({
             name: categoryData.name,
-            image: categoryData.image // This will now be an object with url and public_id
+            image: categoryData.image // This will now be a URL string
           });
-          // Use the Cloudinary URL for image preview
-          setImagePreview(categoryData.image?.url || '');
+          // Use the image URL for preview
+          setImagePreview(categoryData.image || '');
         } else {
           message.error(response.message || 'Failed to fetch category details');
         }
@@ -126,8 +126,8 @@ const EditCategory = () => {
                   alt="Category Preview" 
                   className="w-32 h-32 object-cover rounded-lg"
                   onError={(e) => {
-                    e.target.src = '/default-category.png'; // Fallback image
-                    console.warn(`Failed to load image for category`);
+                    e.target.src = '/default-image.png'; // Fallback image
+                    console.warn('Failed to load category image preview');
                   }}
                 />
               </div>

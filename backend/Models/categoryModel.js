@@ -9,14 +9,8 @@ const categorySchema = new mongoose.Schema({
     maxlength: [50, 'Category name cannot exceed 50 characters']
   },
   image: {
-    public_id: {
-      type: String,
-      required: [true, 'Category image public ID is required']
-    },
-    url: {
-      type: String,
-      required: [true, 'Category image URL is required']
-    }
+    type: String,
+    required: [true, 'Category image URL is required']
   },
   isActive: {
     type: Boolean,

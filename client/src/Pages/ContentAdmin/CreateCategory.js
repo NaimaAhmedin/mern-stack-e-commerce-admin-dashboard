@@ -88,6 +88,10 @@ const CreateCategory = () => {
                   src={imagePreview} 
                   alt="Preview" 
                   className="w-32 h-32 object-cover rounded-lg"
+                  onError={(e) => {
+                    e.target.src = '/default-image.png'; // Fallback image
+                    console.warn('Failed to load category image preview');
+                  }}
                 />
               </div>
             )}

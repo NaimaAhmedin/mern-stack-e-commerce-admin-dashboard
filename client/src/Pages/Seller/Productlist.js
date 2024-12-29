@@ -92,12 +92,15 @@ const Productlist = () => {
           
           // Safe image handling
           const processImages = (images) => {
-            if (!images || !Array.isArray(images)) return [];
-            return images.map(img => {
-              if (typeof img === 'string') return img;
-              if (img && img.url) return img.url;
-              return null;
-            }).filter(Boolean);
+            if (!images) return [];
+            // If images is already a string or an array of strings, return it directly
+            if (typeof images === 'string') return [images];
+            if (Array.isArray(images)) {
+              return images.filter(img => typeof img === 'string');
+            }
+            // If it's an object with a url property, return the url
+            if (images.url && typeof images.url === 'string') return [images.url];
+            return [];
           };
 
           const processedImages = processImages(product.images);
