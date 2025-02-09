@@ -24,7 +24,7 @@ const ProductControl = () => {
           console.log('Processing product:', product); // Debug individual product
           return {
             key: product._id,           
-            seller: product.seller_id?.username || 'N/A',
+            seller: product.seller_id?.name || 'N/A',
             id: product._id,
             name: product.name || 'N/A',
             brand: product.brand || 'N/A',

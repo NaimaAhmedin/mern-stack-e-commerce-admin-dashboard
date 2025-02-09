@@ -10,7 +10,7 @@ const promotionRoutes = require('./routes/promotionRoutes');
 const errorMiddleware = require('./middlewares/errorMiddleware');
 const path = require('path');
 const productRoutes = require('./routes/productRoutes');
-
+const orderRoutes = require('./routes/orderRoutes');
 // Load environment variables
 dotenv.config({ path: './.env' });
 
@@ -39,7 +39,7 @@ app.use('/api/users', userRoutes); // User routes
 app.use('/api/routes', mainRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/products', productRoutes); // Add product routes
-
+app.use('/api/orders', orderRoutes); // Add order routes
 // Test Route
 app.get('/', (req, res) => {
   res.send('Server is running...');

@@ -1,317 +1,335 @@
-import React, { useState } from 'react';
-import { Table, Button, Modal,   } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Modal, message, Spin } from 'antd';
 import Ordereditemlist from './Ordereditemlist';
+import { useNavigate } from 'react-router-dom';
 import { MdSearch } from "react-icons/md";
+import { getOrders } from '../../services/orderService';
+import { getProduct } from '../../services/productService';
+import handleViewDetails from './handleViewDetails';
 // const { Option } = Select;
 
-// Updated columns with new fields and modified stock & category filters
-const columns = (showProductDetails, showOrderDetails, showCostBreakdown, filterCategory) => [
-  {
-    title: "SNo",
-    dataIndex: "key",
-    render: (text, record, index) => index + 1,
-  },
-  {
-    title: "Order ID",
-    dataIndex: "orderId",
-  },
-  {
-    title: "Customer Name",
-    dataIndex: "customerName",
-  },
- 
-  {
-    title: "Deliverer Name",
-    dataIndex: "delivererName",
-  },
-  {
-    title: "Order Time",
-    dataIndex: "orderTime",
-    render: (orderTime) => {
-      const time = new Date(`1970-01-01T${orderTime}:00`); // Add a default date
-      return time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    },
-  },
-  
-  {
-    title: "Order Date",
-    dataIndex: "orderDate",
-    render: (orderDate) => new Date(orderDate).toLocaleDateString(),
-  },
-  {
-    title: "Items",
-    align: "center",
-    render: (_, record) => (
-      <div>
-        <Button 
-          onClick={() => showProductDetails(record)} 
-          style={{ backgroundColor: '#007bff', color: 'white' }}
-        >
-          Item Details
-        </Button>
-      </div>
-    ),
-  },
-  {
-    title: "Total Cost",
-    dataIndex: "totalCost",
-    render: (text, record) => (
-      <Button 
-        onClick={() => showCostBreakdown(record)} 
-        style={{ backgroundColor: '#28a745', color: 'white' }}
-      >
-        {record.totalCost.toFixed(2)}
-      </Button>
-    ),
-  },
-  {
-    title: "Actions",
-    render: (_, record) => (
-      <div>
-        <Button 
-          onClick={() => showOrderDetails(record)} 
-          style={{ marginLeft: '10px', backgroundColor: '#007bff', color: 'white' }}
-        >
-        Details
-        </Button>
-      </div>
-    ),
-  },
-];
 
-// Updated sample data with more products and images
-const data1 = [
-  {
-    key: 0,
-    orderId: "P001",
-    customerName: "Abubeker",
-    delivererName: "Amir",
-    shippingAddress: "Weyra, Addis Ababa",
-    paymentMethod:"Telebirr",
-    orderTime: "18:15",
-    orderDate: "5/02/2024",
-    totalCost: 49.99,
-
-    price: 49.99,
-    stockAddress:"Bethel,Addis Ababa",
-    description: "High-quality running shoes for daily workouts.",
-    
-  },
-  {
-    key: 2,
-    orderId: "P002",
-    customerName: "Rejeb",
-    delivererName: "Robel",
-    shippingAddress: "Bethel, Addis Ababa",
-    paymentMethod: "Telebirr",
-    orderTime: "02:17",
-    orderDate: "10/03/2024",
-    totalCost: 120.75,
-    price: 120.75,
-    stockAddress: "Mexico, Addis Ababa",
-    description: "Noise-cancelling headphones with Bluetooth connectivity.",
-    
-  },
-  {
-    key: 3,
-    orderId: "P003",
-    customerName: "Ahmed",
-    delivererName: "Desta",
-    shippingAddress: "Mexico, Addis Ababa",
-    paymentMethod: "Telebirr",
-    orderTime: "02:17",
-    orderDate: "2/04/2024",
-    totalCost: 150.00,
-    price: 150.00,
-    stockAddress: "Kasanchs, Addis Ababa",
-    description: "Smartphone with a high-definition camera and long-lasting battery.",
-    
-  },
-  {
-    key: 4,
-    orderId: "P004",
-    customerName: "Neima",
-    delivererName: "Nahom",
-    shippingAddress: "Megenagna, Addis Ababa",
-    paymentMethod: "Telebirr",
-    orderTime: "02:17",
-    orderDate: "05/05/2024",
-    totalCost: 85.50,
-    price: 85.50,
-    stockAddress: "Piasa, Addis Ababa",
-    description: "Comfortable running shoes for outdoor activities.",
-    
-  },
-  {
-    key: 5,
-    orderId: "P005",
-    customerName: "Seniya",
-    delivererName: "Daniel",
-    shippingAddress: "Saris, Addis Ababa",
-    paymentMethod: "Telebirr",
-    orderTime: "02:17",
-    orderDate: "12/06/2024",
-    totalCost: 220.30,
-    price: 220.30,
-    stockAddress: "Kera, Addis Ababa",
-    description: "High-efficiency washing machine with energy-saving features.",
-    
-  },
-  {
-    key: 6,
-    orderId: "P006",
-    customerName: "Meskerem",
-    delivererName: "Natnael",
-    shippingAddress: "Bole, Addis Ababa",
-    paymentMethod: "Telebirr",
-    orderTime: "14:30",
-    orderDate: "3/07/2024",
-    totalCost: 350.00,
-    price: 350.00,
-    stockAddress: "Mexico, Addis Ababa",
-    description: "Modern office chair with ergonomic design.",
-    
-  }
-];
 
 const Pendingorders = () => {
+
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-
   const [orderDetailModalVisible, setOrderDetailModalVisible] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   const [costBreakdownModalVisible, setCostBreakdownModalVisible] = useState(false);
   const [costDetails, setCostDetails] = useState(null);
-
-  const [orders] = useState(data1);
+  const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilters, setStatusFilters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const showProductDetails = (product) => {
-    setSelectedProduct([product]);
-    setDetailModalVisible(true);
+  const fetchOrders = async () => {
+    try {
+      const response = await getOrders();
+      console.log('FULL RESPONSE:', JSON.stringify(response, null, 2));
+  
+      const ordersArray = Array.isArray(response) ? response : response.data;
+      
+      const formattedOrders = ordersArray
+        .filter(order => order.status.toLowerCase() === 'pending')
+        .map((order, index) => {
+          console.log(`PENDING ORDER ${index} FULL DETAILS:`, JSON.stringify(order, null, 2));
+    
+          const orderProducts = order.products.map((productItem) => {
+            return {
+              productId: productItem.product?._id || 'N/A',
+              productName: productItem.product?.name || 'No Name', 
+              quantity: productItem.quantity || 0,
+              price: productItem.price || 0,
+              sellerName:  productItem.seller_id?.name || 'No Name',
+              sellerPhone:  productItem.seller_id?.phone || 'No Phone',
+              sellerEmail:  productItem.seller_id?.email || 'No Email',
+              sellerAddress:  productItem.seller_id?.address || 'No Address',
+            };
+          });
+    
+          return {
+            key: order._id,           
+            customerName: order.userId?.name || 'N/A',
+            customerEmail  : order.userId?.email || 'N/A',
+            customerPhone: order.userId?.phone || 'N/A',
+            id: order._id,
+            totalPrice: order.totalPrice || 0,
+            address: order.address || 'N/A',
+            status: order.status || 'N/A',
+            orderedAt: order.orderedAt,
+            orderDate: new Date(order.createdAt).toLocaleDateString(),
+            orderTime: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            products: orderProducts,
+          };
+        });
+  
+      console.log('FORMATTED PENDING ORDERS:', JSON.stringify(formattedOrders, null, 2));
+      setOrders(formattedOrders);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching pending orders:', error);
+      setLoading(false);
+    }
   };
 
-  const showOrderDetails = (product) => {
-    setSelectedOrder(product);
-    setOrderDetailModalVisible(true);
-  };
+  // const filteredOrders = orders.filter((order) => {
+  //   // If search term is empty, return all orders
+  //   if (!searchTerm) return true;
 
-  const showCostBreakdown = (order) => {
-    setCostDetails({
-      itemsPrice: order.price,
-      vat: order.price * 0.15, // Example: 15% VAT
-      tax: order.price * 0.05,  // Example: 5% tax
-      shipmentFee: 10.00,       // Example: fixed shipment fee
-      totalCost: order.totalCost,
-    });
-    setCostBreakdownModalVisible(true);
-  };
+  //   // Safely handle different searchable fields
+  //   const searchTermLower = searchTerm.toLowerCase();
+    
+  //   const customerNameMatch = (order.customerName || '')
+  //     .toLowerCase()
+  //     .includes(searchTermLower);
+    
+  //   const statusMatch = (order.status || '')
+  //     .toLowerCase()
+  //     .includes(searchTermLower);
+    
+  //   const orderIdMatch = (order.id || order._id || '')
+  //     .toString()
+  //     .toLowerCase()
+  //     .includes(searchTermLower);
 
-  const filteredOrders = orders.filter(order =>
-    order.customerName.toLowerCase().startsWith(searchTerm.toLowerCase())
-  );
+  //   // Return true if any field matches the search term
+  //   return customerNameMatch || statusMatch || orderIdMatch;
+  // });
+
+useEffect(() => {
+  fetchOrders();
+}, []);
+
+const filteredOrders = orders.filter(order =>
+  (order.customerName || "").toLowerCase().startsWith((searchTerm || "").toLowerCase())
+);
+
+  // const showProductDetails = (product) => {
+  //   setSelectedProduct([product]);
+  //   setDetailModalVisible(true);
+  // };
+
+  // const showOrderDetails = (product) => {
+  //   setSelectedOrder(product);
+  //   setOrderDetailModalVisible(true);
+  // };
+
+  // const showCostBreakdown = (order) => {
+  //   setCostDetails({
+  //     itemsPrice: order.price,
+  //     vat: order.price * 0.15, // Example: 15% VAT
+  //     tax: order.price * 0.05,  // Example: 5% tax
+  //     shipmentFee: 10.00,       // Example: fixed shipment fee
+  //     totalCost: order.totalCost,
+  //   });
+  //   setCostBreakdownModalVisible(true);
+  // };
+
+  
   
 
-  const handleDetailModalClose = () => {
-    setDetailModalVisible(false);
-    setSelectedProduct(null);
+  // const handleDetailModalClose = () => {
+  //   setDetailModalVisible(false);
+  //   setSelectedProduct(null);
+  // };
+
+  // const handleOrderDetailModalClose = () => {
+  //   setOrderDetailModalVisible(false);
+  //   setSelectedOrder(null);
+  // };
+
+  const handleOrderDetails = (order) => {
+    Modal.info({
+      title: 'Order Details',
+      width: '60%',
+      content: (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ flex: 1, minWidth: '280px'}}>
+            <p><strong>Order ID:</strong> {order.id}</p>
+            <p><strong>Customer Name:</strong> {order.customerName}</p>
+            <p><strong>Customer Phone:</strong> {order.customerPhone || 'N/A'}</p>
+            <p><strong>Customer Email:</strong> {order.customerEmail || 'N/A'}</p>
+            <p><strong>Customer Address:</strong> {order.address || 'N/A'}</p>
+            <p><strong>Status:</strong> {order.status}</p>
+            <p><strong>Total Price:</strong> {order.totalPrice}</p>
+            <p><strong>Order Time:</strong> {order.orderTime}</p>
+            <p><strong>Order Date:</strong> {order.orderDate}</p>
+          </div>
+          {/* <div style={{ flex: 1, minWidth: '280px' }}>
+            {product.images && product.images.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 max-w-full">
+                {product.images.slice(0, 5).map((image, index) => (
+                  <div 
+                    key={index} 
+                    className="relative overflow-hidden rounded-lg shadow-md"
+                    style={{ 
+                      width: '150px', 
+                      height: '150px',
+                      aspectRatio: '1/1'
+                    }}
+                  >
+                    <img 
+                      src={image} 
+                      alt={`${product.name} ${index + 1}`}
+                      className="absolute inset-0 w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : product.image ? (
+              <div 
+                className="relative overflow-hidden rounded-lg shadow-md"
+                style={{ 
+                  width: '250px', 
+                  height: '250px',
+                  aspectRatio: '1/1'
+                }}
+              >
+                <img 
+                  src={product.image}
+                  alt={product.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <p className="text-gray-500 italic">No images available</p>
+            )}
+          </div> */}
+        </div>
+      ),
+      onOk() {},
+    });
   };
 
-  const handleOrderDetailModalClose = () => {
-    setOrderDetailModalVisible(false);
-    setSelectedOrder(null);
-  };
 
+
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
-    <div>
-       <div className="flex justify-between items-center mb-4">
-      <h3 className="mb-4 text-3xl font-bold">Order List</h3>
-
-      <div className="flex items-center gap-2">
+    <div className="p-4 bg-gray-100 min-h-screen">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Orders</h1>
+        <div className="flex items-center gap-4">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Search Orders..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-full pl-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="px-4 py-2 border border-gray-300 rounded-full pr-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
-            <MdSearch className="absolute right-2 top-2 text-gray-500" size={20} />
+            <MdSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
           </div>
-          </div>
-          </div>
-      <Table 
-        columns={columns(showProductDetails, showOrderDetails, showCostBreakdown)} 
-        dataSource={filteredOrders} 
-        pagination={{ pageSize: 10 }}
-      />
+        </div>
+      </div>
 
-<Modal
-        title="Item List"
-        visible={detailModalVisible}
-        footer={null}
-        onCancel={handleDetailModalClose}
-        width="auto"    // Allow width to adjust to content size
-        style={{ maxWidth: '90vw' }}  // Optional: limit max size to 90% of the viewport width
-         bodyStyle={{ padding: 0, margin: 0 }}
-      >
-        {selectedProduct ? (
-          <Ordereditemlist products={selectedProduct} showProductDetails={showProductDetails} 
-          style={{ margin: 0, padding: 0 }}/>
-        ) : (
-          <p>No product selected.</p>
-        )}
-      </Modal>
-
-      <Modal
-        title="Order Details"
-        visible={orderDetailModalVisible}
-        footer={null}
-        onCancel={handleOrderDetailModalClose}
-      >
-        {selectedOrder && (
-          <div style={{ display: 'flex', flexDirection: 'row' }}>
-            <div style={{ flex: 1 }}>
-              <p><strong>Order ID:</strong> {selectedOrder.orderId}</p>
-              <p><strong>Customer Name:</strong> {selectedOrder.customerName}</p>
-              <p><strong>Customer Email :</strong> {selectedOrder.customerEmail}</p>
-              <p><strong>Seller Name:</strong> {selectedOrder.sellerName}</p>
-              <p><strong>Seller Email :</strong> {selectedOrder.sellerEmail}</p>
-              <p><strong>Deliverer Name:</strong> {selectedOrder.delivererName}</p>
-              <p><strong>Deliverer Email :</strong> {selectedOrder.delivererEmail}</p>
-              <p><strong>Order Time:</strong> {new Date(`1970-01-01T${selectedOrder.orderTime}:00`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
-              <p><strong>Order Date:</strong> {new Date(selectedOrder.orderDate).toLocaleDateString()}</p>
-              <p><strong>Status:</strong> {selectedOrder.status}</p>
-              <p><strong>Shipping Address:</strong> {selectedOrder.shippingAddress}</p>
-              <p><strong>Stock Address:</strong> {selectedOrder.stockAddress}</p>
-              <p><strong>Payment Method:</strong> {selectedOrder.paymentMethod}</p>
-              <p><strong>Total Cost:</strong> {selectedOrder.totalCost.toFixed(2)}</p>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Cost Breakdown Modal */}
-      <Modal
-        title="Cost Breakdown"
-        visible={costBreakdownModalVisible}
-        footer={null}
-        onCancel={() => setCostBreakdownModalVisible(false)}
-      >
-        {costDetails && (
-          <div>
-            <p><strong>Price:</strong> {costDetails.itemsPrice.toFixed(2)}</p>
-            <p><strong>VAT:</strong> {costDetails.vat.toFixed(2)}</p>
-            <p><strong>Tax:</strong> {costDetails.tax.toFixed(2)}</p>
-            <p><strong>Shipment Fee:</strong> {costDetails.shipmentFee.toFixed(2)}</p>
-            <p><strong>Total Cost:</strong> {costDetails.totalCost.toFixed(2)}</p>
-          </div>
-        )}
-      </Modal>
+      <Table dataSource={filteredOrders} pagination={false} rowKey="key">
+       
+        <Table.Column 
+          title={<span className="font-semibold text-lg">SNo</span>} 
+          dataIndex="key" 
+          key="key" 
+          render={(text, record, index) => <span className="font-semibold">{index + 1}</span>} 
+          
+        />
+        <Table.Column 
+          title={<span className="font-semibold text-lg">Customer Name</span>} 
+          dataIndex="customerName" 
+          key="customerName" 
+          render={(text) => <span className="font-semibold">{text}</span>} 
+        />
+        <Table.Column 
+    title= "Status"
+    dataIndex= "status"
+    filters={statusFilters}
+    onFilter={(value, record) => record.status.includes(value)} 
+  />
+       <Table.Column 
+          title="Total Price" 
+          dataIndex="totalPrice" 
+          key="totalPrice" 
+          render={(totalPrice) => totalPrice !== undefined && totalPrice !== null ? `${totalPrice.toFixed(2)}` : 'N/A'}
+        />
+        <Table.Column 
+          title="Order Time" 
+          dataIndex="orderedAt" 
+          key="orderTime"
+          render={(timestamp) => {
+            if (!timestamp) return 'N/A';
+            try {
+              const date = new Date(timestamp);
+              return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              });
+            } catch (err) {
+              console.error('Error formatting time:', err);
+              return 'Invalid Time';
+            }
+          }}
+        />
+        <Table.Column 
+          title="Order Date" 
+          dataIndex="orderedAt" 
+          key="orderDate"
+          render={(timestamp) => {
+            if (!timestamp) return 'N/A';
+            try {
+              const date = new Date(timestamp);
+              return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              });
+            } catch (err) {
+              console.error('Error formatting date:', err);
+              return 'Invalid Date';
+            }
+          }}
+          sorter={(a, b) => {
+            if (!a.createdAt || !b.createdAt) return 0;
+            return new Date(a.createdAt) - new Date(b.createdAt);
+          }}
+        />
+        {/* <Table.Column 
+          title="Stock" 
+          dataIndex="stock" 
+          key="stock" 
+        /> */}
+        <Table.Column
+  title="Action"
+  key="action"
+  align="center"
+  render={(text, record) => (
+    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+      <Button type="link" onClick={() => handleViewDetails(record)}>
+        Items
+      </Button>
+    <Button type="link" onClick={() => handleOrderDetails(record)}>
+     Order Details
+    </Button>
+    </div> 
+  )}
+/>
+      </Table>
     </div>
   );
+  
 };
 
 export default Pendingorders;
