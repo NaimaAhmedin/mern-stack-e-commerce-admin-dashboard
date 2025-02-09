@@ -16,13 +16,13 @@ L.Icon.Default.mergeOptions({
 });
 
 const containerStyle = {
-  width: '100%',  // Full viewport width
-  height: '500px', // Increased height
-  marginBottom: '2rem',
+  width: '100%',
+  height: '400px',
+  borderRadius: '0.5rem',
   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
 };
 
-const center = {
+const defaultCenter = {
   lat: 9.0222,  // Default center at Addis Ababa
   lng: 38.7468
 };
@@ -41,7 +41,7 @@ const AddProduct = () => {
     warranty: '',
     location: {
       type: 'Point',
-      coordinates: [38.7468, 9.0222] // [longitude, latitude]
+      coordinates: [defaultCenter.lng, defaultCenter.lat]
     }
   });
   const [images, setImages] = useState([]);
@@ -50,7 +50,11 @@ const AddProduct = () => {
   const [subcategories, setSubcategories] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [markerPosition, setMarkerPosition] = useState(center);
+  const [markerPosition, setMarkerPosition] = useState(defaultCenter);
+  const [locationName, setLocationName] = useState('');
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [isGettingCurrentLocation, setIsGettingCurrentLocation] = useState(true);
+  const [locationError, setLocationError] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -114,7 +118,7 @@ const AddProduct = () => {
         warranty: '',
         location: {
           type: 'Point',
-          coordinates: [38.7468, 9.0222] // [longitude, latitude]
+          coordinates: [defaultCenter.lng, defaultCenter.lat]
         }
       });
       navigate('/seller/productList');
@@ -209,20 +213,98 @@ const AddProduct = () => {
     });
   };
 
+  // Function to get location name from coordinates
+  const getLocationName = async (lat, lng) => {
+    try {
+      setIsLoadingLocation(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      );
+      const data = await response.json();
+      return data.display_name || 'Location name not found';
+    } catch (error) {
+      console.error('Error getting location name:', error);
+      return 'Error getting location name';
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
+  // Function to get user's current location
+  const getCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+      setIsGettingCurrentLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Update marker position and form data
+          setMarkerPosition({ lat: latitude, lng: longitude });
+          setFormData(prev => ({
+            ...prev,
+            location: {
+              type: 'Point',
+              coordinates: [longitude, latitude]
+            }
+          }));
+
+          // Get location name for the current position
+          try {
+            const name = await getLocationName(latitude, longitude);
+            setLocationName(name);
+          } catch (error) {
+            console.error('Error getting location name:', error);
+          }
+          setIsGettingCurrentLocation(false);
+        },
+        (error) => {
+          console.error('Error getting current location:', error);
+          setLocationError('Could not get your current location. Using default location.');
+          setIsGettingCurrentLocation(false);
+          // Get location name for default position
+          getLocationName(defaultCenter.lat, defaultCenter.lng).then(name => {
+            setLocationName(name);
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      setLocationError('Geolocation is not supported by your browser. Using default location.');
+      setIsGettingCurrentLocation(false);
+      // Get location name for default position
+      getLocationName(defaultCenter.lat, defaultCenter.lng).then(name => {
+        setLocationName(name);
+      });
+    }
+  };
+
+  // Get current location when component mounts
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
   const MapEvents = () => {
     const map = useMap();
     
     useEffect(() => {
-      map.on('click', (e) => {
+      map.on('click', async (e) => {
         const { lat, lng } = e.latlng;
         setMarkerPosition({ lat, lng });
         setFormData(prev => ({
           ...prev,
           location: {
             type: 'Point',
-            coordinates: [lng, lat] // MongoDB expects [longitude, latitude]
+            coordinates: [lng, lat]
           }
         }));
+
+        // Get and set location name for the new coordinates
+        const name = await getLocationName(lat, lng);
+        setLocationName(name);
       });
     }, [map]);
 
@@ -231,7 +313,7 @@ const AddProduct = () => {
 
   const renderMap = () => (
     <MapContainer
-      center={[center.lat, center.lng]}
+      center={[markerPosition.lat, markerPosition.lng]}
       zoom={13}
       style={containerStyle}
     >
@@ -427,12 +509,59 @@ const AddProduct = () => {
             </div>
 
             {/* Product Location */}
-            <div className="col-span-2 mb-6 -mx-6 px-6">
-              <label className="block text-gray-700 text-sm font-bold mb-3">
-                Product Location* (Click on the map to set location)
+            <div className="col-span-2 mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Product Location
               </label>
               <div className="relative">
-                {renderMap()}
+                {isGettingCurrentLocation ? (
+                  <div className="h-[400px] flex items-center justify-center bg-gray-50 rounded-lg">
+                    <div className="text-center">
+                      <svg className="animate-spin h-8 w-8 mx-auto mb-2 text-blue-500" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <p className="text-gray-600">Getting your current location...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {renderMap()}
+                    {locationError && (
+                      <div className="mt-2 text-yellow-600 text-sm">
+                        <p>{locationError}</p>
+                      </div>
+                    )}
+                    <div className="mt-2 p-3 bg-gray-50 rounded-md shadow-sm">
+                      {isLoadingLocation ? (
+                        <div className="flex items-center text-sm text-gray-500">
+                          <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                          Loading location details...
+                        </div>
+                      ) : locationName && (
+                        <div>
+                          <p className="font-semibold text-gray-700">Selected Location:</p>
+                          <p className="text-gray-600 text-sm break-words">{locationName}</p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="mt-1 flex justify-between items-center">
+                <p className="text-sm text-gray-500">
+                  Click anywhere on the map to set the product location
+                </p>
+                <button
+                  type="button"
+                  onClick={getCurrentLocation}
+                  className="text-sm text-blue-600 hover:text-blue-700 focus:outline-none"
+                >
+                  Use My Location
+                </button>
               </div>
             </div>
 

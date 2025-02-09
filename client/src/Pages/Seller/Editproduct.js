@@ -48,6 +48,8 @@ const EditProduct = () => {
   });
 
   const [markerPosition, setMarkerPosition] = useState(defaultCenter);
+  const [locationName, setLocationName] = useState('');
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [images, setImages] = useState([]);
   const [currentImages, setCurrentImages] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -55,16 +57,33 @@ const EditProduct = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Function to get location name from coordinates
+  const getLocationName = async (lat, lng) => {
+    try {
+      setIsLoadingLocation(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      );
+      const data = await response.json();
+      return data.display_name || 'Location name not found';
+    } catch (error) {
+      console.error('Error getting location name:', error);
+      return 'Error getting location name';
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+
   useEffect(() => {
     const fetchProductData = async () => {
       try {
-        console.log('Fetching product data for id:', id); // Debug log
+        console.log('Fetching product data for id:', id);
         const [categoriesResponse, productData] = await Promise.all([
           getCategories(),
           getProduct(id)
         ]);
 
-        console.log('Product data:', productData); // Debug log
+        console.log('Product data:', productData);
 
         if (!categoriesResponse.success) {
           message.error('Failed to load categories');
@@ -78,6 +97,9 @@ const EditProduct = () => {
         if (productData.location && productData.location.coordinates) {
           const [lng, lat] = productData.location.coordinates;
           setMarkerPosition({ lat, lng });
+          // Get location name for the initial coordinates
+          const name = await getLocationName(lat, lng);
+          setLocationName(name);
         }
 
         // Set form data
@@ -98,7 +120,7 @@ const EditProduct = () => {
         });
 
         // Set current images
-        console.log('Setting current images:', productData.images); // Debug log
+        console.log('Setting current images:', productData.images);
         if (productData.images && Array.isArray(productData.images)) {
           setCurrentImages(productData.images);
         }
@@ -116,16 +138,20 @@ const EditProduct = () => {
     const map = useMap();
     
     useEffect(() => {
-      map.on('click', (e) => {
+      map.on('click', async (e) => {
         const { lat, lng } = e.latlng;
         setMarkerPosition({ lat, lng });
         setFormData(prev => ({
           ...prev,
           location: {
             type: 'Point',
-            coordinates: [lng, lat] // MongoDB expects [longitude, latitude]
+            coordinates: [lng, lat]
           }
         }));
+
+        // Get and set location name for the new coordinates
+        const name = await getLocationName(lat, lng);
+        setLocationName(name);
       });
     }, [map]);
 
@@ -512,13 +538,32 @@ const EditProduct = () => {
             </div>
 
             {/* Product Location */}
-            <div className="col-span-2 mb-6 -mx-6 px-6">
-              <label className="block text-gray-700 text-sm font-bold mb-3">
-                Product Location* (Click on the map to set location)
+            <div className="col-span-2 mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Product Location
               </label>
               <div className="relative">
                 {renderMap()}
+                <div className="mt-2 p-3 bg-gray-50 rounded-md shadow-sm">
+                  {isLoadingLocation ? (
+                    <div className="flex items-center text-sm text-gray-500">
+                      <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Loading location details...
+                    </div>
+                  ) : locationName && (
+                    <div>
+                      <p className="font-semibold text-gray-700">Selected Location:</p>
+                      <p className="text-gray-600 text-sm break-words">{locationName}</p>
+                    </div>
+                  )}
+                </div>
               </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Click anywhere on the map to update the product location
+              </p>
             </div>
 
             {/* Product Description */}
