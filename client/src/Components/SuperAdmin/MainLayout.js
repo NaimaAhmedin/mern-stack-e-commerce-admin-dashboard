@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import {  Layout, Menu, theme } from 'antd';
 import { AiOutlineDashboard } from "react-icons/ai";
 import { IoMdNotifications } from "react-icons/io";
-import { FaUsersCog,FaUsers,FaUserPlus,FaChartLine,FaUserCircle } from "react-icons/fa";
+import { FaUsersCog,FaUsers,FaUserPlus,FaChartLine,FaUserCircle,FaCog } from "react-icons/fa";
 import{Outlet} from "react-router-dom"
 const { Header, Sider, Content } = Layout;
 const MainLayout = () => {
@@ -93,7 +93,18 @@ const MainLayout = () => {
               icon: <FaChartLine className='fs-4' />, // Icon for reports and statistics
               label: 'Reports & Config',
             },
-            
+            {
+              key: 'Settings',
+              icon: <FaCog className='fs-4' />,  // Changed from FaCo to FaUsers (group icon)
+              label: 'Settings',
+              children: [
+                {
+                  key:'Profile',
+                  icon: <FaUserCircle className='fs-4' />,  // Correct profile icon
+                  label: 'Profile',
+                },
+              ],
+            },
           ]}
         />
       </Sider>

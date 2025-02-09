@@ -10,6 +10,7 @@ import AddAdmin from '../../Pages/SuperAdmin/AddAdmin';
 import ViewAllUsers from '../../Pages/SuperAdmin/ViewAllUsers';
 import DeliveryAdminList from '../../Pages/SuperAdmin/DeliveryAdminList';
 import ContentAdminList from '../../Pages/SuperAdmin/ContentAdminList';
+import Profile from '../../Pages/SuperAdmin/Profile';
 
 function SuperAdminRoutes() {
     return (
@@ -23,6 +24,7 @@ function SuperAdminRoutes() {
             <Route path="AddAdmin" element={<AddAdmin />} />
             <Route path="DeliveryAdmins" element={<DeliveryAdminList />} />
             <Route path="ContentAdmins" element={<ContentAdminList />} />
+            <Route path="Profile" element={<Profile />} />
         </Route>
     );
 }
