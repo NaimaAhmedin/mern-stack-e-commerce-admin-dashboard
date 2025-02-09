@@ -87,19 +87,25 @@ export const getProduct = async (id) => {
     });
 
     const data = await response.json();
+    console.log('Product data received:', data); // Debug log
 
     if (!response.ok) {
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
     }
 
     // Ensure images are in the correct format
-    if (data.images) {
-      data.images = data.images.map(img => ({
-        url: typeof img === 'string' ? img : img.url,
-        public_id: typeof img === 'string' ? null : img.public_id
-      }));
+    if (data.images && Array.isArray(data.images)) {
+      data.images = data.images.map(img => {
+        if (typeof img === 'string') {
+          return img; // If it's already a string URL, return as is
+        }
+        return img.url || img.secure_url || img; // Handle both url formats
+      });
+    } else {
+      data.images = []; // Ensure images is always an array
     }
 
+    console.log('Processed images:', data.images); // Debug log
     return data;
   } catch (error) {
     console.error("Error fetching product:", error);
@@ -167,28 +173,17 @@ export const createProduct = async (productData) => {
 };
 
 // Update an existing product
-export const updateProduct = async (id, data, formData) => {
+export const updateProduct = async (id, formData) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    // If formData is not provided, create a new one
-    if (!formData) {
-      formData = new FormData();
-    }
-
-    // Append text fields
-    Object.keys(data).forEach(key => {
-      if (key !== 'images' && key !== 'existingImages') {
-        formData.append(key, data[key]);
-      }
-    });
-
-    // Handle existing images
-    if (data.existingImages && data.existingImages.length > 0) {
-      formData.append('existingImages', JSON.stringify(data.existingImages));
+    // Log the FormData contents for debugging
+    console.log('FormData contents:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`);
     }
 
     const response = await fetch(`${API_URL}/${id}`, {

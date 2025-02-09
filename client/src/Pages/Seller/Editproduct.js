@@ -4,6 +4,29 @@ import { getProduct, updateProduct } from '../../services/productService';
 import { getCategories } from '../../services/categoryService';
 import { message } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
+const containerStyle = {
+  width: '100%',
+  height: '500px',
+  marginBottom: '2rem',
+  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+};
+
+const defaultCenter = {
+  lat: 9.0222,  // Default center at Addis Ababa
+  lng: 38.7468
+};
 
 const EditProduct = () => {
   const navigate = useNavigate();
@@ -12,14 +35,19 @@ const EditProduct = () => {
     name: '',
     description: '',
     price: '',
-    stock: '',
+    quantity: '',
     category: '',
     subcategory: '',
     brand: '',
     color: '',
-    warranty: ''
+    warranty: '',
+    location: {
+      type: 'Point',
+      coordinates: [38.7468, 9.0222] // Default to Addis Ababa
+    }
   });
 
+  const [markerPosition, setMarkerPosition] = useState(defaultCenter);
   const [images, setImages] = useState([]);
   const [currentImages, setCurrentImages] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -30,16 +58,13 @@ const EditProduct = () => {
   useEffect(() => {
     const fetchProductData = async () => {
       try {
-        // Fetch categories and product data concurrently with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-
+        console.log('Fetching product data for id:', id); // Debug log
         const [categoriesResponse, productData] = await Promise.all([
           getCategories(),
           getProduct(id)
         ]);
 
-        clearTimeout(timeoutId);
+        console.log('Product data:', productData); // Debug log
 
         if (!categoriesResponse.success) {
           message.error('Failed to load categories');
@@ -49,63 +74,80 @@ const EditProduct = () => {
         const allCategories = categoriesResponse.data;
         setCategories(allCategories);
 
-        if (!productData) {
-          message.error('Failed to load product');
-          return;
+        // Set location and marker position from product data
+        if (productData.location && productData.location.coordinates) {
+          const [lng, lat] = productData.location.coordinates;
+          setMarkerPosition({ lat, lng });
         }
 
-        // Set the form data with all product information
+        // Set form data
         setFormData({
           name: productData.name || '',
           description: productData.description || '',
           price: productData.price || '',
-          stock: productData.quantity || productData.amount || '',
-          category: productData.categoryId?._id || productData.category || '',
-          subcategory: productData.subcategoryId?._id || productData.subcategory || '',
+          quantity: productData.quantity || '',
+          category: productData.categoryId || '',
+          subcategory: productData.subcategoryId || '',
           brand: productData.brand || '',
           color: productData.color || '',
-          warranty: productData.warranty || ''
+          warranty: productData.warranty || '',
+          location: productData.location || {
+            type: 'Point',
+            coordinates: [38.7468, 9.0222]
+          }
         });
 
-        // Handle images
+        // Set current images
+        console.log('Setting current images:', productData.images); // Debug log
         if (productData.images && Array.isArray(productData.images)) {
-          console.log('Setting current images:', productData.images);
-          // Handle both string URLs and object URLs
-          const imageUrls = productData.images.map(img =>
-            typeof img === 'string' ? img : img.url || img
-          );
-          setCurrentImages(imageUrls);
-        } else if (productData.image) {
-          console.log('Setting single image as array:', [productData.image]);
-          setCurrentImages([productData.image]);
-        } else {
-          console.log('No images found in product data');
-          setCurrentImages([]);
-        }
-
-        // If we have a category, load its subcategories
-        if (productData.categoryId?._id || productData.category) {
-          const categoryId = productData.categoryId?._id || productData.category;
-          const selectedCategory = allCategories.find(cat => cat._id === categoryId);
-          if (selectedCategory && selectedCategory.subcategories) {
-            setSubcategories(selectedCategory.subcategories);
-          }
+          setCurrentImages(productData.images);
         }
 
       } catch (err) {
-        console.error('Error:', err);
-
-        // More detailed error handling
-        if (err.name === 'AbortError') {
-          message.error('Request timed out. Please check your internet connection.');
-        } else {
-          message.error('Failed to load data');
-        }
+        console.error('Error fetching product data:', err);
+        message.error('Failed to load product data');
       }
     };
 
     fetchProductData();
   }, [id]);
+
+  const MapEvents = () => {
+    const map = useMap();
+    
+    useEffect(() => {
+      map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        setMarkerPosition({ lat, lng });
+        setFormData(prev => ({
+          ...prev,
+          location: {
+            type: 'Point',
+            coordinates: [lng, lat] // MongoDB expects [longitude, latitude]
+          }
+        }));
+      });
+    }, [map]);
+
+    return null;
+  };
+
+  const renderMap = () => (
+    <MapContainer
+      center={[markerPosition.lat, markerPosition.lng]}
+      zoom={13}
+      style={containerStyle}
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      <Marker 
+        position={[markerPosition.lat, markerPosition.lng]}
+      />
+      <MapEvents />
+    </MapContainer>
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -134,19 +176,38 @@ const EditProduct = () => {
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
+    
+    // Validate total number of images
+    if (files.length + currentImages.length > 5) {
+      message.error('Maximum 5 images allowed');
+      return;
+    }
+
+    // Create preview URLs for new images
     const newImages = files.map(file => ({
       file,
       preview: URL.createObjectURL(file)
     }));
+
     setImages(prev => [...prev, ...newImages]);
   };
 
   const handleRemoveNewImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    setImages(prev => {
+      const newImages = [...prev];
+      // Clean up the preview URL
+      URL.revokeObjectURL(newImages[index].preview);
+      newImages.splice(index, 1);
+      return newImages;
+    });
   };
 
   const handleRemoveCurrentImage = (index) => {
-    setCurrentImages(prev => prev.filter((_, i) => i !== index));
+    setCurrentImages(prev => {
+      const newImages = [...prev];
+      newImages.splice(index, 1);
+      return newImages;
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -155,61 +216,71 @@ const EditProduct = () => {
     setError('');
 
     try {
-      // Validate required fields
-      if (!formData.name || !formData.price || !formData.category) {
-        setError('Please fill in all required fields');
+      // Create FormData object
+      const productData = new FormData();
+      
+      // Validate and convert numeric fields
+      const price = parseFloat(formData.price);
+      const quantity = parseInt(formData.quantity);
+      const warranty = parseInt(formData.warranty);
+
+      // Validate price
+      if (isNaN(price) || price <= 0) {
+        message.error('Please enter a valid price greater than 0');
         setLoading(false);
         return;
       }
 
-      // Create FormData for new images
-      const newFormData = new FormData();
-      images.forEach(img => {
-        newFormData.append('images', img.file);
+      // Validate quantity
+      if (isNaN(quantity) || quantity < 0) {
+        message.error('Please enter a valid quantity (0 or greater)');
+        setLoading(false);
+        return;
+      }
+
+      // Append basic fields
+      productData.append('name', formData.name);
+      productData.append('description', formData.description);
+      productData.append('price', price);
+      productData.append('quantity', quantity);
+      productData.append('categoryId', formData.category);
+      productData.append('subcategoryId', formData.subcategory);
+      productData.append('brand', formData.brand);
+      productData.append('color', formData.color);
+      productData.append('warranty', warranty || 0);
+      
+      // Append location if exists
+      if (formData.location) {
+        productData.append('location', JSON.stringify(formData.location));
+      }
+
+      // Append new images
+      images.forEach(image => {
+        productData.append('images', image.file);
       });
 
-      // Prepare product data
-      const productData = {
-        name: formData.name,
-        description: formData.description,
-        price: Number(formData.price),
-        quantity: Number(formData.stock || formData.quantity),
-        category: formData.category,
-        subcategory: formData.subcategory,
-        brand: formData.brand,
-        color: formData.color,
-        warranty: Number(formData.warranty),
-      };
+      // Append current images
+      productData.append('currentImages', JSON.stringify(currentImages));
 
-      // Handle existing images
-      const existingImages = currentImages.map(img => {
-        if (typeof img === 'string') {
-          // If img is just a URL string, create an object
-          return {
-            url: img,
-            public_id: img.split('/').pop().split('.')[0] // Extract public_id from URL
-          };
-        }
-        return img; // If it's already an object with public_id and url
-      });
+      // Log form data for debugging
+      console.log('Form data being sent:');
+      for (let [key, value] of productData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
 
-      // Add existing images to product data
-      productData.existingImages = existingImages;
-
-      console.log('Product Update Data:', productData);
-
-      // Upload product
-      const response = await updateProduct(id, productData, newFormData);
+      const response = await updateProduct(id, productData);
 
       if (response.success) {
         message.success('Product updated successfully');
-        navigate('/seller/ProductList');  
+        navigate('/seller/productList');
       } else {
         setError(response.message || 'Failed to update product');
+        message.error(response.message || 'Failed to update product');
       }
-    } catch (error) {
-      console.error('Error updating product:', error);
-      setError(error.message || 'An unexpected error occurred');
+    } catch (err) {
+      console.error('Error updating product:', err);
+      setError(err.message || 'Failed to update product');
+      message.error(err.message || 'Failed to update product');
     } finally {
       setLoading(false);
     }
@@ -219,7 +290,7 @@ const EditProduct = () => {
     <div className="p-4 bg-gray-100 min-h-screen">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Edit Product</h1>
-
+        
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
@@ -315,8 +386,8 @@ const EditProduct = () => {
               </label>
               <input
                 type="number"
-                name="stock"
-                value={formData.stock}
+                name="quantity"
+                value={formData.quantity}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
                 required
@@ -367,99 +438,112 @@ const EditProduct = () => {
               />
             </div>
 
-            {/* Multiple Image Upload */}
-            <div className="mb-4 col-span-2">
+            {/* Image Upload */}
+            <div className="col-span-2 mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
-                Product Images
+                Product Images (Max 5)
               </label>
               <input
                 type="file"
-                onChange={handleImageChange}
                 accept="image/*"
                 multiple
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                onChange={handleImageChange}
+                className="w-full p-2 border rounded"
+                disabled={currentImages.length + images.length >= 5}
               />
-
-              {/* Display current images */}
-              {currentImages.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-bold mb-2">Current Images:</p>
-                  <div className="grid grid-cols-3 gap-4">
-                    {currentImages.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={typeof image === 'string' ? image : image.url || image}
-                          alt={`Current ${index + 1}`}
-                          className="w-32 h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveCurrentImage(index)}
-                          className="absolute top-2 right-2 bg-white rounded-full p-1 hover:bg-gray-100"
-                        >
-                          <DeleteOutlined className="text-red-500" />
-                        </button>
-                      </div>
-                    ))}
+              <div className="mt-4">
+                {/* Current Images */}
+                {currentImages.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm font-semibold mb-2">Current Images:</p>
+                    <div className="flex flex-wrap gap-4">
+                      {currentImages.map((url, index) => (
+                        <div key={`current-${index}`} className="relative w-24 h-24">
+                          <img
+                            src={url}
+                            alt={`Product ${index + 1}`}
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                              console.error('Image failed to load:', url);
+                              e.target.src = '/placeholder-image.jpg'; // Add a placeholder image
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCurrentImage(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Display new images */}
-              {images.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-bold mb-2">New Images:</p>
-                  <div className="grid grid-cols-3 gap-4">
-                    {images.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={image.preview}
-                          alt={`New ${index + 1}`}
-                          className="w-32 h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveNewImage(index)}
-                          className="absolute top-2 right-2 bg-white rounded-full p-1 hover:bg-gray-100"
-                        >
-                          <DeleteOutlined className="text-red-500" />
-                        </button>
-                      </div>
-                    ))}
+                {/* New Images */}
+                {images.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold mb-2">New Images:</p>
+                    <div className="flex flex-wrap gap-4">
+                      {images.map((image, index) => (
+                        <div key={`new-${index}`} className="relative w-24 h-24">
+                          <img
+                            src={image.preview}
+                            alt={`New ${index + 1}`}
+                            className="w-full h-full object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveNewImage(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-2">
+                {5 - (currentImages.length + images.length)} image slots remaining
+              </p>
+            </div>
+
+            {/* Product Location */}
+            <div className="col-span-2 mb-6 -mx-6 px-6">
+              <label className="block text-gray-700 text-sm font-bold mb-3">
+                Product Location* (Click on the map to set location)
+              </label>
+              <div className="relative">
+                {renderMap()}
+              </div>
+            </div>
+
+            {/* Product Description */}
+            <div className="col-span-2 mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                rows="4"
+              />
             </div>
           </div>
 
-          {/* Description */}
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
-              rows="4"
-            />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex justify-end gap-4">
-            <button
-              type="button"
-              onClick={() => navigate('/seller/ProductList')}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
-              disabled={loading}
-            >
-              Cancel
-            </button>
+          {/* Submit Button */}
+          <div className="flex justify-end mt-6">
             <button
               type="submit"
-              className="px-4 py-2 text-white bg-orange-600 rounded-lg hover:bg-orange-700"
               disabled={loading}
+              className={`bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               {loading ? 'Updating...' : 'Update Product'}
             </button>

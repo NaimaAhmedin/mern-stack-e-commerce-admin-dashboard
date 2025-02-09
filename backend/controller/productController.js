@@ -78,8 +78,38 @@ exports.createProduct = async (req, res) => {
       quantity, 
       color, 
       warranty, 
-      description 
+      description,
+      location 
     } = req.body;
+
+    // Parse location data
+    let locationData;
+    try {
+      locationData = typeof location === 'string' ? JSON.parse(location) : location;
+      
+      if (!locationData || !locationData.coordinates) {
+        return res.status(400).json({
+          success: false,
+          message: 'Location coordinates are required'
+        });
+      }
+
+      // Validate coordinates
+      const [longitude, latitude] = locationData.coordinates;
+      if (!longitude || !latitude || 
+          longitude < -180 || longitude > 180 || 
+          latitude < -90 || latitude > 90) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid coordinates provided'
+        });
+      }
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid location data format'
+      });
+    }
 
     // Validate required fields
     if (!name || !categoryId || !price) {
@@ -151,7 +181,11 @@ exports.createProduct = async (req, res) => {
       color, 
       warranty: Number(warranty) || 0, 
       description,
-      images: imageUploads
+      images: imageUploads,
+      location: {
+        type: 'Point',
+        coordinates: locationData.coordinates
+      }
     };
 
     // Create and save the product
@@ -190,94 +224,127 @@ exports.createProduct = async (req, res) => {
 // Update a product
 exports.updateProduct = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { 
-      name, 
-      brand, 
-      categoryId, 
-      subcategoryId, 
-      price, 
-      quantity, 
-      color, 
-      warranty, 
-      description
+    console.log('=== UPDATE PRODUCT REQUEST ===');
+    console.log('Request Body:', req.body);
+    console.log('Request Files:', req.files);
+
+    const productId = req.params.id;
+    const {
+      name,
+      description,
+      price,
+      quantity,
+      categoryId,
+      subcategoryId,
+      brand,
+      color,
+      warranty,
+      location,
+      currentImages
     } = req.body;
 
+    // Parse location data
+    let locationData;
+    try {
+      locationData = typeof location === 'string' ? JSON.parse(location) : location;
+      
+      if (locationData && locationData.coordinates) {
+        const [longitude, latitude] = locationData.coordinates;
+        if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid coordinates provided'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing location:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid location data format'
+      });
+    }
+
+    // Handle image uploads
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(file => cloudinary.uploader.upload(file.path));
+      const uploadResults = await Promise.all(uploadPromises);
+      imageUrls = uploadResults.map(result => result.secure_url);
+    }
+
+    // Get current images from request body
     let existingImages = [];
     try {
-      existingImages = JSON.parse(req.body.existingImages || '[]');
-    } catch (e) {
-      console.error('Error parsing existingImages:', e);
-      existingImages = [];
-    }
-
-    // Find the existing product
-    const existingProduct = await Product.findById(id);
-    if (!existingProduct) {
-      return res.status(404).json({
+      existingImages = JSON.parse(currentImages || '[]');
+    } catch (error) {
+      console.error('Error parsing currentImages:', error);
+      return res.status(400).json({
         success: false,
-        message: 'Product not found'
+        message: 'Invalid current images format'
       });
     }
 
-    // Validate seller ownership
-    if (existingProduct.seller_id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
+    // Combine current and new images
+    const allImages = [...existingImages, ...imageUrls];
+
+    // Parse and validate numeric fields
+    console.log('Raw price value:', price);
+    const priceValue = Number(price);
+    console.log('Parsed price value:', priceValue);
+
+    if (isNaN(priceValue)) {
+      return res.status(400).json({
         success: false,
-        message: 'You are not authorized to update this product'
+        message: 'Price must be a valid number'
+      });
+    }
+    if (priceValue <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Price must be greater than 0'
       });
     }
 
-    // Upload new images to Cloudinary if files are present
-    const newImageUploads = req.files ? await Promise.all(
-      req.files.map(async (file) => {
-        try {
-          const result = await cloudinary.uploader.upload(file.path, {
-            folder: 'products',
-            transformation: [
-              { width: 800, height: 600, crop: 'limit' }
-            ]
-          });
-          
-          // Remove local file after upload
-          fs.unlinkSync(file.path);
+    const quantityValue = parseInt(quantity);
+    if (isNaN(quantityValue) || quantityValue < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity must be a non-negative number'
+      });
+    }
 
-          // Return only the URL
-          return result.secure_url;
-        } catch (uploadError) {
-          console.error('Cloudinary upload error:', uploadError);
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-          throw uploadError;
-        }
-      })
-    ) : [];
+    const warrantyValue = parseInt(warranty) || 0;
 
-    // Combine existing and new images
-    const combinedImages = [
-      ...existingImages,
-      ...newImageUploads
-    ].slice(0, 5); // Limit to 5 images
+    // Update product data
+    const updateData = {
+      name,
+      description,
+      price: priceValue,
+      quantity: quantityValue,
+      categoryId,
+      subcategoryId,
+      brand,
+      color,
+      warranty: warrantyValue,
+      images: allImages,
+      location: locationData
+    };
 
-    // Update product with new data
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => 
+      updateData[key] === undefined && delete updateData[key]
+    );
+
+    console.log('Final update data:', updateData);
+
     const updatedProduct = await Product.findByIdAndUpdate(
-      id, 
-      {
-        name, 
-        brand, 
-        categoryId, 
-        subcategoryId, 
-        price: Number(price), 
-        quantity: Number(quantity), 
-        color, 
-        warranty: Number(warranty), 
-        description,
-        images: combinedImages
-      }, 
+      productId,
+      updateData,
       { 
-        new: true,
-        runValidators: true
+        new: true, 
+        runValidators: true,
+        context: 'query'
       }
     );
 
@@ -288,29 +355,14 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
-    console.log('Updated Product:', {
-      id: updatedProduct._id,
-      name: updatedProduct.name,
-      images: updatedProduct.images
-    });
-
     res.status(200).json({
       success: true,
       data: updatedProduct,
       message: 'Product updated successfully'
     });
-  } catch (error) {
-    console.error('Product Update Error:', error);
-    
-    // Cleanup any uploaded files in case of error
-    if (req.files) {
-      req.files.forEach(file => {
-        if (fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
-        }
-      });
-    }
 
+  } catch (error) {
+    console.error('Error in updateProduct:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating product',

@@ -3,6 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { createProduct } from '../../services/productService';
 import { getCategories } from '../../services/categoryService';
 import { message } from 'antd';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icon
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
+const containerStyle = {
+  width: '100%',  // Full viewport width
+  height: '500px', // Increased height
+  marginBottom: '2rem',
+  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+};
+
+const center = {
+  lat: 9.0222,  // Default center at Addis Ababa
+  lng: 38.7468
+};
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -15,7 +38,11 @@ const AddProduct = () => {
     subcategory: '',
     brand: '',
     color: '',
-    warranty: ''
+    warranty: '',
+    location: {
+      type: 'Point',
+      coordinates: [38.7468, 9.0222] // [longitude, latitude]
+    }
   });
   const [images, setImages] = useState([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState([]);
@@ -23,6 +50,7 @@ const AddProduct = () => {
   const [subcategories, setSubcategories] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [markerPosition, setMarkerPosition] = useState(center);
 
   useEffect(() => {
     fetchCategories();
@@ -52,6 +80,7 @@ const AddProduct = () => {
       productData.append('brand', formData.brand);
       productData.append('color', formData.color);
       productData.append('warranty', formData.warranty);
+      productData.append('location', JSON.stringify(formData.location));
 
       // Append images
       if (images && images.length > 0) {
@@ -82,7 +111,11 @@ const AddProduct = () => {
         subcategory: '',
         brand: '',
         color: '',
-        warranty: ''
+        warranty: '',
+        location: {
+          type: 'Point',
+          coordinates: [38.7468, 9.0222] // [longitude, latitude]
+        }
       });
       navigate('/seller/productList');
     } catch (err) {
@@ -175,6 +208,43 @@ const AddProduct = () => {
       return newUrls;
     });
   };
+
+  const MapEvents = () => {
+    const map = useMap();
+    
+    useEffect(() => {
+      map.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        setMarkerPosition({ lat, lng });
+        setFormData(prev => ({
+          ...prev,
+          location: {
+            type: 'Point',
+            coordinates: [lng, lat] // MongoDB expects [longitude, latitude]
+          }
+        }));
+      });
+    }, [map]);
+
+    return null;
+  };
+
+  const renderMap = () => (
+    <MapContainer
+      center={[center.lat, center.lng]}
+      zoom={13}
+      style={containerStyle}
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      <Marker 
+        position={[markerPosition.lat, markerPosition.lng]}
+      />
+      <MapEvents />
+    </MapContainer>
+  );
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
@@ -332,21 +402,21 @@ const AddProduct = () => {
                 accept="image/*"
                 multiple
                 onChange={handleImageChange}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                className="w-full p-2 border rounded"
               />
               {imagePreviewUrls.length > 0 && (
-                <div className="mt-4 grid grid-cols-5 gap-4">
+                <div className="mt-4 flex flex-wrap gap-4">
                   {imagePreviewUrls.map((url, index) => (
                     <div key={index} className="relative">
                       <img
                         src={url}
                         alt={`Preview ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-24 h-24 object-cover rounded"
                       />
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}
-                        className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
                       >
                         ×
                       </button>
@@ -354,24 +424,31 @@ const AddProduct = () => {
                   ))}
                 </div>
               )}
-              <p className="text-sm text-gray-500 mt-1">
-                {5 - imagePreviewUrls.length} image slots remaining
-              </p>
             </div>
-          </div>
 
-          {/* Description */}
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
-              rows="4"
-            />
+            {/* Product Location */}
+            <div className="col-span-2 mb-6 -mx-6 px-6">
+              <label className="block text-gray-700 text-sm font-bold mb-3">
+                Product Location* (Click on the map to set location)
+              </label>
+              <div className="relative">
+                {renderMap()}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="col-span-2 mb-4">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-orange-500"
+                rows="4"
+              />
+            </div>
           </div>
 
           {/* Buttons */}

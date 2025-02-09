@@ -17,6 +17,17 @@ const productSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true
+    }
+  },
   color: { type: String },
   price: { type: Number, required: true },
   quantity: { type: Number, default: 0 },
@@ -39,5 +50,8 @@ const productSchema = new mongoose.Schema({
     default: []
   }
 }, { timestamps: true });
+
+// Create a 2dsphere index on the location field for geospatial queries
+productSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Product', productSchema);
