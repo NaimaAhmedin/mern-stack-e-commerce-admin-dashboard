@@ -3,12 +3,88 @@ const Order = require('../Models/orderModel');
 // Get all orders
 exports.getAllOrders = async (req, res) => {
   try {
+    // If seller, we'll do a specific filtering
+if (req.user.role === 'seller') {
+  // Find orders that have at least one product from this seller
+  const orders = await Order.find({
+    'products.seller_id': req.user._id
+  })
+  .populate({
+    path: 'products.product',
+    populate: [
+      {
+        path: 'categoryId',
+        select: 'name'
+      },
+      {
+        path: 'subcategoryId',
+        select: 'name'
+      }
+    ]
+  })
+  .populate('userId', 'name phone email');
+
+  // Transform orders to only include this seller's products
+  const sellerOrders = orders.map(order => {
+    // Filter products that belong to this seller
+    const sellerProducts = order.products.filter(
+      productItem => productItem.seller_id.toString() === req.user._id.toString()
+    );
+
+    // If there are no matching products, skip this order
+    if (sellerProducts.length === 0) return null;
+
+    return {
+      ...order.toObject(),
+      products: sellerProducts,
+      totalPrice: sellerProducts.reduce(
+        (total, item) => total + (item.price * item.quantity), 
+        0
+      )
+    };
+  }).filter(order => order !== null); // Remove null values (orders without matching products)
+
+  return res.status(200).json({
+    success: true,
+    data: sellerOrders,
+    message: 'Seller-specific orders fetched successfully'
+  });
+}
+
+
+    // For admin or other roles, fetch all orders normally
     const orders = await Order.find()
-      .populate('userId', 'name email')
-      .populate('products.productId', 'name price');
-    res.status(200).json(orders);
+      .populate({
+        path: 'products.product',
+        populate: [
+          {
+            path: 'categoryId',
+            select: 'name'
+          },
+          {
+            path: 'subcategoryId',
+            select: 'name'
+          },
+        ]
+      })
+      .populate({
+        path: 'products.seller_id',
+        select: 'name phone email address'
+      })
+      .populate('userId', 'name email phone address');
+
+    res.status(200).json({
+      success: true,
+      data: orders,
+      message: 'All orders fetched successfully'
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching orders', error });
+    console.error('Error in getAllOrders:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error fetching orders', 
+      error: error.message 
+    });
   }
 };
 

@@ -374,6 +374,7 @@ useEffect(() => {
         <Table.Column
   title="Action"
   key="action"
+  align="center"
   render={(text, record) => (
     <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
       <Button type="link" onClick={() => handleViewDetails(record)}>

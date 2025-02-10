@@ -20,7 +20,7 @@ exports.getAllProducts = async (req, res) => {
     const products = await Product.find(query)
       .populate('categoryId', 'name')
       .populate('subcategoryId', 'name')
-      .populate('seller_id', 'username'); // Optionally populate seller details
+      .populate('seller_id', 'name'); // Optionally populate seller details
 
     console.log('Found products:', products); // Debug found products
 
@@ -44,7 +44,9 @@ exports.getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
       .populate('categoryId', 'name')
-      .populate('subcategoryId', 'name');
+      .populate('subcategoryId', 'name')
+      .populate('seller_id', 'name')
+      .populate('seller_id', 'phone');
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.status(200).json(product);
   } catch (error) {
