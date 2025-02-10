@@ -1,17 +1,18 @@
-import React from "react";
-import { Layout, Row, Col, Card, Statistic } from "antd";
-import { FaHome, FaUsers, FaChartLine, FaCog, FaFileAlt } from "react-icons/fa";
+import React from 'react';
+import { Card, Row, Col } from 'antd';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Line } from "react-chartjs-2";
+import { Line, Bar } from 'react-chartjs-2';
+import { FaUsers, FaShoppingCart, FaUserTie, FaFileAlt } from 'react-icons/fa';
 
 // Register ChartJS components
 ChartJS.register(
@@ -19,165 +20,192 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
 );
 
-const { Content } = Layout;
-
 const Dashboard = () => {
+  // Sample data for monthly sales performance
   const salesData = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
-        label: "Sales",
+        label: 'Sales',
         data: [65, 59, 80, 81, 56, 55],
         fill: false,
-        borderColor: "#1890ff",
-        tension: 0.1,
+        borderColor: 'rgb(75, 192, 192)',
+        tension: 0.4,
+      },
+    ],
+  };
+
+  // Sample data for weekly user activity
+  const userActivityData = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [
+      {
+        label: 'Active Users',
+        data: [120, 190, 150, 180, 200, 170, 160],
+        backgroundColor: '#95DE64',
       },
     ],
   };
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'Monthly Sales Performance',
+        display: false,
       },
     },
     scales: {
-      x: {
-        title: {
-          display: true,
-          text: 'Month'
-        }
-      },
       y: {
-        title: {
-          display: true,
-          text: 'Sales ($)'
-        }
-      }
-    }
+        beginAtZero: true,
+        grid: {
+          drawBorder: false,
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+      },
+    },
   };
 
   return (
-    <Layout style={{ minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
-      <Content style={{ padding: "20px" }}>
-        <h1 style={{ textAlign: "center", fontWeight: "bold", color: "#003a8c", marginBottom: "20px" }}>
-          Super Admin Dashboard
-        </h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Super Admin Dashboard</h1>
 
-        {/* Statistics Cards */}
-        <Row gutter={[16, 16]} justify="center">
-          <Col xs={24} sm={12} lg={8}>
-            <Card
-              style={{
-                borderRadius: "10px",
-                backgroundColor: "#e6f7ff",
-              }}
-              bordered={false}
-            >
-              <Statistic
-                title="Total Users"
-                value={2500}
-                prefix={<FaUsers />}
-                valueStyle={{ color: "#1890ff", fontSize: "24px" }}
-              />
-            </Card>
-          </Col>
+      {/* Stats Cards */}
+      <Row gutter={[16, 16]} className="mb-6">
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-blue-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-blue-600 mb-2">
+                  <FaUsers size={24} />
+                </div>
+                <p className="text-sm text-gray-600">Total Users</p>
+                <h2 className="text-2xl font-bold">112,893</h2>
+              </div>
+              <div className="w-24 h-2 bg-blue-200 rounded-full">
+                <div className="w-3/4 h-full bg-blue-600 rounded-full"></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-green-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-green-600 mb-2">
+                  <FaShoppingCart size={24} />
+                </div>
+                <p className="text-sm text-gray-600">Total Sales</p>
+                <h2 className="text-2xl font-bold">$150,000</h2>
+              </div>
+              <div className="w-24 h-2 bg-green-200 rounded-full">
+                <div className="w-3/4 h-full bg-green-600 rounded-full"></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-purple-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-purple-600 mb-2">
+                  <FaUserTie size={24} />
+                </div>
+                <p className="text-sm text-gray-600">Active Sellers</p>
+                <h2 className="text-2xl font-bold">75+</h2>
+              </div>
+              <div className="w-24 h-2 bg-purple-200 rounded-full">
+                <div className="w-3/4 h-full bg-purple-600 rounded-full"></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-red-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-red-600 mb-2">
+                  <FaFileAlt size={24} />
+                </div>
+                <p className="text-sm text-gray-600">Reports</p>
+                <h2 className="text-2xl font-bold">93</h2>
+              </div>
+              <div className="w-24 h-2 bg-red-200 rounded-full">
+                <div className="w-3/4 h-full bg-red-600 rounded-full"></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+      </Row>
 
-          <Col xs={24} sm={12} lg={8}>
-            <Card
-              style={{
-                borderRadius: "10px",
-                backgroundColor: "#fff1f0",
-              }}
-              bordered={false}
-            >
-              <Statistic
-                title="Total Revenue"
-                value={150000}
-                suffix="Birr"
-                prefix={<FaChartLine />}
-                valueStyle={{ color: "#ff4d4f", fontSize: "24px" }}
-              />
-            </Card>
-          </Col>
+      {/* Charts */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={14}>
+          <Card title="Sales Analytics" bordered={false}>
+            <div style={{ height: '300px' }}>
+              <Line data={salesData} options={chartOptions} />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card title="User Activity" bordered={false}>
+            <div style={{ height: '300px' }}>
+              <Bar data={userActivityData} options={chartOptions} />
+            </div>
+          </Card>
+        </Col>
+      </Row>
 
-          <Col xs={24} sm={12} lg={8}>
-            <Card
-              style={{
-                borderRadius: "10px",
-                backgroundColor: "#f6ffed",
-              }}
-              bordered={false}
-            >
-              <Statistic
-                title="Active Sellers"
-                value={75}
-                prefix={<FaHome />}
-                valueStyle={{ color: "#52c41a", fontSize: "24px" }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Sales Chart */}
-        <div
-          style={{
-            marginTop: "40px",
-            padding: "20px",
-            backgroundColor: "#fff",
-            borderRadius: "10px",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <h2 style={{ textAlign: "center", color: "#003a8c", marginBottom: "20px" }}>
-            Sales Performance
-          </h2>
-          <div style={{ width: "80%", margin: "0 auto" }}>
-            <Line data={salesData} options={chartOptions} />
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <Row gutter={[16, 16]} style={{ marginTop: "40px" }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: "10px",
-                backgroundColor: "#e6f7ff",
-                textAlign: "center",
-              }}
-              bordered={false}
-            >
-              <FaCog style={{ fontSize: "24px", color: "#1890ff" }} />
-              <h3 style={{ marginTop: "10px", color: "#1890ff" }}>Settings</h3>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card
-              style={{
-                borderRadius: "10px",
-                backgroundColor: "#fff1f0",
-                textAlign: "center",
-              }}
-              bordered={false}
-            >
-              <FaFileAlt style={{ fontSize: "24px", color: "#ff4d4f" }} />
-              <h3 style={{ marginTop: "10px", color: "#ff4d4f" }}>Reports</h3>
-            </Card>
-          </Col>
-        </Row>
-      </Content>
-    </Layout>
+      {/* Quick Actions */}
+      <Row gutter={[16, 16]} className="mt-6">
+        <Col xs={24} sm={8}>
+          <Card
+            bordered={false}
+            className="bg-blue-50 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="text-blue-600 mb-2">
+              <FaUsers size={24} />
+            </div>
+            <h3 className="font-semibold">Quick Settings</h3>
+            <p className="text-sm text-gray-600">Configure system preferences</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            bordered={false}
+            className="bg-green-50 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="text-green-600 mb-2">
+              <FaShoppingCart size={24} />
+            </div>
+            <h3 className="font-semibold">Statistics</h3>
+            <p className="text-sm text-gray-600">View detailed analytics</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            bordered={false}
+            className="bg-red-50 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="text-red-600 mb-2">
+              <FaFileAlt size={24} />
+            </div>
+            <h3 className="font-semibold">Performance</h3>
+            <p className="text-sm text-gray-600">Monitor system metrics</p>
+          </Card>
+        </Col>
+      </Row>
+    </div>
   );
 };
 
