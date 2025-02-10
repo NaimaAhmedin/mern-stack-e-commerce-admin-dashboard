@@ -1,132 +1,261 @@
 import React from 'react';
-import { GoArrowDownRight, GoArrowUpRight } from "react-icons/go";
-import Chart from './chart';
-import { Column } from '@ant-design/plots';
+import { Card, Row, Col, Table } from 'antd';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+import { FaBox, FaListUl, FaPercentage, FaUsers } from 'react-icons/fa';
 
-import '../../App.css';
-const data1 = [];
-  for (let i=0; i<46; i++)
-    {
-        data1.push({
-    key: i,
-    name: `Edward King ${i}`,
-    product: 32,
-    status: `London, Park Lane no. ${i}`,
-  });}
-
-
-const orderData = [];
-for (let i = 0; i < 45; i++) {
-  orderData.push({
-    key: i,
-    name: `Neima Ahemdin ${i}`,
-    Product: 32,
-    status: `Addis Abeba, Mexico no.${i}`,
-  });
-}
-
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Dashboard = () => {
-    const data = [
-        { type: 'Jan', products: 30 },
-        { type: 'Feb', products: 48 },
-        { type: 'Mar', products: 28 },
-        { type: 'Apr', products: 34 },
-        { type: 'May', products: 30 },
-        { type: 'Jun', products: 44 },
-        { type: 'July', products: 48 },
-        { type: 'Aug', products: 30 },
-        { type: 'Sept', products: 28 },
-        { type: 'Oct', products: 48 },
-        { type: 'Nov', products: 44 },
-        { type: 'Dec', products: 40 },
-    ];
+  // Sample data for monthly product statistics
+  const productData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [
+      {
+        label: 'Products',
+        data: [25, 45, 28, 32, 28, 42, 45, 25, 23, 45, 40, 35],
+        backgroundColor: '#9333ea', // Purple color
+      },
+    ],
+  };
 
-   
-  const config = {
-    data,
-    xField: 'type',
-    yField: 'products',
-    color: '#ffd333',
-    label: {
-      position: 'top', 
-      style: {
-        fill: '#ffffff',
-        opacity: 1,
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
       },
     },
-    xAxis: {
-      label: {
-        autoHide: true,
-        autoRotate: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          drawBorder: false,
+        },
       },
-    },
-    meta: {
-      type: {
-        alias: 'Month',
-      },
-      products: {
-        alias: 'product',
+      x: {
+        grid: {
+          display: false,
+        },
       },
     },
   };
 
+  // Sample data for recent products table
+  const recentProducts = [
+    {
+      key: '1',
+      name: 'Wireless Earbuds',
+      category: 'Electronics',
+      status: 'Active',
+      price: '$129.99',
+    },
+    {
+      key: '2',
+      name: 'Leather Wallet',
+      category: 'Accessories',
+      status: 'Pending',
+      price: '$49.99',
+    },
+    {
+      key: '3',
+      name: 'Smart Watch',
+      category: 'Electronics',
+      status: 'Active',
+      price: '$199.99',
+    },
+    {
+      key: '4',
+      name: 'Running Shoes',
+      category: 'Sports',
+      status: 'Active',
+      price: '$89.99',
+    },
+  ];
+
+  const columns = [
+    {
+      title: 'Product Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category',
+      key: 'category',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs ${
+            status === 'Active'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-yellow-100 text-yellow-800'
+          }`}
+        >
+          {status}
+        </span>
+      ),
+    },
+    {
+      title: 'Price',
+      dataIndex: 'price',
+      key: 'price',
+    },
+  ];
+
   return (
-    <div style={{ minHeight: '100vh', color: '#fff' }}>
-      {/* App Name Section */}
-      <div className="app-header" style={{ backgroundColor: '#ffd333', padding: '10px', textAlign: 'center' }}>
-        <h2 className="text-2xl "style={{ margin: 0, color: '#000' }}>Merkato Ecommerce App</h2>
-      </div>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Content Management Dashboard</h1>
 
-    
-      <h3 className='mb-4 text-2xl text-black'>Content Admin Dashboard</h3>
-      <div className='d-flex justify-content-between align-items-center gap-3'>
-        <div className='d-flex justify-content-between align-items-end flex-grow-1 bg-dark p-3 rounded-3 '>
-          <div>
-            <p className='mb-0' style={{ color: '#ccc' }}>Total</p>
-            <h4 className='mb-0'>1100</h4>
-          </div>
-          <div className='d-flex flex-column align-items-end'>
-            <h6 className='text-red-500'><GoArrowDownRight /> 32%</h6>
-            <p className='mb-0' style={{ color: '#ccc' }}>Compared To yesterday</p>
-          </div>
-        </div>
-
-        <div className='d-flex justify-content-between align-items-end flex-grow-1 bg-dark p-3 rounded-3'>
-          <div>
-            <p className='mb-0' style={{ color: '#ccc' }}>Total</p>
-            <h4 className='mb-0'>1100</h4>
-          </div>
-          <div className='d-flex flex-column align-items-end'>
-            <h6 className='text-red-500'><GoArrowDownRight /> 32%</h6>
-            <p className='mb-0' style={{ color: '#ccc' }}>Compared To Last Week</p>
-          </div>
-        </div>
-
-        <div className='d-flex justify-content-between align-items-end flex-grow-1 bg-dark p-3 rounded-3'>
-          <div>
-            <p className='mb-0' style={{ color: '#ccc' }}>Total</p>
-            <h4 className='mb-0'>1100</h4>
-          </div>
-          <div className='d-flex flex-column align-items-end'>
-            <h6 className='text-green-400'><GoArrowUpRight />
-            32%</h6>
-            <p className='mb-0' style={{ color: '#ccc' }}>Compared To Last Month</p>
-          </div>
-        </div>
-      </div>
-      <div className="flex space-x-4 mt-4">
-            <div className="flex-1 bg-white p-4 rounded shadow">
-                <h3 className="my-4 text-3xl font-bold text-black">Product Statistics</h3>
-                <div>
-                    <Column {...config} />
+      {/* Stats Cards */}
+      <Row gutter={[16, 16]} className="mb-6">
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-blue-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-blue-600 mb-2">
+                  <FaBox size={24} />
                 </div>
+                <p className="text-sm text-gray-600">Total Products</p>
+                <h2 className="text-2xl font-bold">1,234</h2>
+              </div>
+              <div className="w-24 h-2 bg-blue-200 rounded-full">
+                <div className="w-3/4 h-full bg-blue-600 rounded-full"></div>
+              </div>
             </div>
-            <div className="w-1/3 bg-white p-4 rounded shadow">
-                <Chart/>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-green-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-green-600 mb-2">
+                  <FaListUl size={24} />
+                </div>
+                <p className="text-sm text-gray-600">Active Categories</p>
+                <h2 className="text-2xl font-bold">48</h2>
+              </div>
+              <div className="w-24 h-2 bg-green-200 rounded-full">
+                <div className="w-3/4 h-full bg-green-600 rounded-full"></div>
+              </div>
             </div>
-        </div>
-      {/* Any other sections can be added here */}
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-purple-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-purple-600 mb-2">
+                  <FaPercentage size={24} />
+                </div>
+                <p className="text-sm text-gray-600">Active Promotions</p>
+                <h2 className="text-2xl font-bold">15</h2>
+              </div>
+              <div className="w-24 h-2 bg-purple-200 rounded-full">
+                <div className="w-3/4 h-full bg-purple-600 rounded-full"></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="bg-red-50 h-full">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-red-600 mb-2">
+                  <FaUsers size={24} />
+                </div>
+                <p className="text-sm text-gray-600">Active Sellers</p>
+                <h2 className="text-2xl font-bold">256</h2>
+              </div>
+              <div className="w-24 h-2 bg-red-200 rounded-full">
+                <div className="w-3/4 h-full bg-red-600 rounded-full"></div>
+              </div>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Charts and Table */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={14}>
+          <Card title="Monthly Product Statistics" bordered={false}>
+            <div style={{ height: '300px' }}>
+              <Bar data={productData} options={chartOptions} />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card title="Recent Products" bordered={false}>
+            <Table
+              columns={columns}
+              dataSource={recentProducts}
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Quick Actions */}
+      <Row gutter={[16, 16]} className="mt-6">
+        <Col xs={24} sm={8}>
+          <Card
+            bordered={false}
+            className="bg-blue-50 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="text-blue-600 mb-2">
+              <FaListUl size={24} />
+            </div>
+            <h3 className="font-semibold">Categories</h3>
+            <p className="text-sm text-gray-600">Manage product categories</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            bordered={false}
+            className="bg-green-50 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="text-green-600 mb-2">
+              <FaPercentage size={24} />
+            </div>
+            <h3 className="font-semibold">Promotions</h3>
+            <p className="text-sm text-gray-600">Manage active promotions</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            bordered={false}
+            className="bg-red-50 cursor-pointer hover:shadow-md transition-shadow"
+          >
+            <div className="text-red-600 mb-2">
+              <FaBox size={24} />
+            </div>
+            <h3 className="font-semibold">Statistics</h3>
+            <p className="text-sm text-gray-600">View detailed reports</p>
+          </Card>
+        </Col>
+      </Row>
     </div>
   );
 };
