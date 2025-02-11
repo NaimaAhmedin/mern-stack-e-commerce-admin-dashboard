@@ -87,31 +87,29 @@ const ContentAdminMainLayout = () => {
     );
   }
 
-  // Profile dropdown menu
-  const profileMenu = (
-    <Menu
-      onClick={({ key }) => {
-        if (key === "signout") {
-          localStorage.removeItem('token');
-          navigate('/');
-        } else if (key === "profile") {
-          navigate('settings/profile');
-        }
-      }}
-      items={[
-        {
-          label: 'Profile',
-          key: 'profile',
-          icon: <CgProfile />,
-        },
-        {
-          label: 'Sign Out',
-          key: 'signout',
-          icon: <MdOutlineControlCamera />,
-        },
-      ]}
-    />
-  );
+  // Profile dropdown menu items
+  const profileMenuItems = {
+    items: [
+      {
+        label: 'Profile',
+        key: 'profile',
+        icon: <CgProfile />,
+      },
+      {
+        label: 'Sign Out',
+        key: 'signout',
+        icon: <MdOutlineControlCamera />,
+      },
+    ],
+    onClick: ({ key }) => {
+      if (key === "signout") {
+        localStorage.removeItem('token');
+        navigate('/');
+      } else if (key === "profile") {
+        navigate('settings/profile');
+      }
+    },
+  };
 
   return (
     <Layout>
@@ -208,7 +206,7 @@ const ContentAdminMainLayout = () => {
               <IoMdNotifications className="fs-4" />
               <span className="badge bg-warning rounded-circle p-1 position-absolute">3</span>
             </div>
-            <Dropdown menu={profileMenu} trigger={['click']}>
+            <Dropdown menu={profileMenuItems} trigger={['click']}>
               <div className="d-flex gap-3 align-items-center" style={{ cursor: 'pointer' }}>
                 {profileData.profileImage ? (
                   <img
