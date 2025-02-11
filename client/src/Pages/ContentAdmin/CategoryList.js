@@ -34,16 +34,11 @@ const CategoryList = () => {
   // Fetch categories from  backend
   const fetchCategories = async () => {
     try {
-      const response = await getCategories();
-      if (response.success && Array.isArray(response.data)) {
-        setCategories(response.data);
-      } else {
-        message.error(response.message || "Failed to load categories");
-        setCategories([]); // Set empty array as fallback
-      }
+      const data = await getCategories();
+      setCategories(Array.isArray(data) ? data : data.data || []);
     } catch (err) {
       console.error("Error loading categories:", err);
-      message.error(err.message || "Failed to load categories");
+      message.error("Failed to load categories. Please try again later.");
       setCategories([]); // Set empty array on error
     }
   };

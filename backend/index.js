@@ -4,9 +4,11 @@ const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 const userRoutes = require('./routes/userRoutes');
 const mainRoutes = require('./routes/roleBasedRoutes'); 
 const promotionRoutes = require('./routes/promotionRoutes');
+const contentRoutes = require('./routes/contentRoutes');
 const errorMiddleware = require('./middlewares/errorMiddleware');
 const path = require('path');
 const productRoutes = require('./routes/productRoutes');
@@ -35,9 +37,11 @@ connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes); // Authentication routes
+app.use('/api/categories', categoryRoutes);
 app.use('/api/users', userRoutes); // User routes
-app.use('/api/routes', mainRoutes);
+app.use('/api', mainRoutes); // Changed to mount on /api directly
 app.use('/api/promotions', promotionRoutes);
+app.use('/api/content', contentRoutes);
 app.use('/api/products', productRoutes); // Add product routes
 app.use('/api/orders', orderRoutes); // Add order routes
 // Test Route

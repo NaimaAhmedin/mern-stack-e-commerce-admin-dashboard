@@ -208,7 +208,7 @@ const ContentAdminMainLayout = () => {
               <IoMdNotifications className="fs-4" />
               <span className="badge bg-warning rounded-circle p-1 position-absolute">3</span>
             </div>
-            <Dropdown overlay={profileMenu} trigger={['click']}>
+            <Dropdown menu={profileMenu} trigger={['click']}>
               <div className="d-flex gap-3 align-items-center" style={{ cursor: 'pointer' }}>
                 {profileData.profileImage ? (
                   <img

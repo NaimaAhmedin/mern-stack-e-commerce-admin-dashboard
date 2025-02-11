@@ -1,82 +1,79 @@
-const API_URL = '/api/routes/categories'; // Uses proxy to direct requests to the backend
+import axios from 'axios';
+
+const API_URL = '/api/categories'; // Uses proxy to direct requests to the backend
+
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      'Authorization': token ? `Bearer ${token}` : '',
+    }
+  };
+};
 
 // Fetch all categories
 export const getCategories = async () => {
-  const response = await fetch(API_URL, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-  return await response.json();
+  try {
+    const response = await axios.get(API_URL, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
 };
 
 // Fetch a single category by ID
 export const getCategory = async (id) => {
-  const response = await fetch(`${API_URL}/${id}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch category details");
+  try {
+    const response = await axios.get(`${API_URL}/${id}`, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching category:', error);
+    throw error;
   }
-  return await response.json();
 };
 
 // Add a new category
 export const createCategory = async (data) => {
-  const token = localStorage.getItem("token"); // Get the token from localStorage
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`, // Attach the token here for authentication
-    },
-    body: data, // This should be FormData includes image and other data
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to create category");
+  try {
+    const response = await axios.post(API_URL, data, {
+      ...getAuthHeader(),
+      headers: {
+        ...getAuthHeader().headers,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating category:', error);
+    throw error;
   }
-  return await response.json();
 };
 
 // Update an existing category
 export const updateCategory = async (id, data) => {
-  const token = localStorage.getItem("token");
-  console.log("Token:", token);
-  if (!token) {
-    throw new Error("No authentication token found.");
+  try {
+    const response = await axios.put(`${API_URL}/${id}`, data, {
+      ...getAuthHeader(),
+      headers: {
+        ...getAuthHeader().headers,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating category:', error);
+    throw error;
   }
-
-  const response = await fetch(`${API_URL}/${id}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`, // Attach the token here
-    },
-    body: data, // Send FormData
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to update category");
-  }
-
-  return await response.json();
 };
 
 // Delete a category
 export const deleteCategory = async (id) => {
-  const token = localStorage.getItem("token"); // Get the token from localStorage
-  const response = await fetch(`${API_URL}/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to delete category");
+  try {
+    const response = await axios.delete(`${API_URL}/${id}`, getAuthHeader());
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    throw error;
   }
-  return await response.json();
 };

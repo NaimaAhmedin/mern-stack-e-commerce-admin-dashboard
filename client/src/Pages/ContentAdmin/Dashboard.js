@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card, Row, Col, Table } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Row, Col, Table, Spin, message } from 'antd';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,6 +11,8 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { FaBox, FaListUl, FaPercentage, FaUsers } from 'react-icons/fa';
+import { getDashboardStats, getMonthlyProductStats, getRecentProducts } from '../../services/contentAdminService';
+import { useNavigate } from 'react-router-dom';
 
 // Register ChartJS components
 ChartJS.register(
@@ -23,14 +25,63 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  // Sample data for monthly product statistics
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalCategories: 0,
+    totalPromotions: 0,
+    totalUsers: 0
+  });
+  const [monthlyStats, setMonthlyStats] = useState([]);
+  const [recentProducts, setRecentProducts] = useState([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [statsResponse, monthlyResponse, recentResponse] = await Promise.all([
+          getDashboardStats(),
+          getMonthlyProductStats(),
+          getRecentProducts()
+        ]);
+
+        if (statsResponse?.success) {
+          setStats(statsResponse.data);
+        }
+
+        if (monthlyResponse?.success) {
+          setMonthlyStats(monthlyResponse.data || Array(12).fill(0));
+        }
+
+        if (recentResponse?.success) {
+          setRecentProducts((recentResponse.data || []).map(product => ({
+            key: product._id,
+            name: product.name,
+            category: product.category || 'Uncategorized',
+            status: product.status || 'Unknown',
+            price: parseFloat(product.price).toFixed(2),
+            date: new Date(product.createdAt).toLocaleDateString()
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        message.error('Failed to fetch dashboard data. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const productData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
       {
         label: 'Products',
-        data: [25, 45, 28, 32, 28, 42, 45, 25, 23, 45, 40, 35],
-        backgroundColor: '#9333ea', // Purple color
+        data: monthlyStats,
+        backgroundColor: '#9333ea',
       },
     ],
   };
@@ -58,38 +109,6 @@ const Dashboard = () => {
     },
   };
 
-  // Sample data for recent products table
-  const recentProducts = [
-    {
-      key: '1',
-      name: 'Wireless Earbuds',
-      category: 'Electronics',
-      status: 'Active',
-      price: '$129.99',
-    },
-    {
-      key: '2',
-      name: 'Leather Wallet',
-      category: 'Accessories',
-      status: 'Pending',
-      price: '$49.99',
-    },
-    {
-      key: '3',
-      name: 'Smart Watch',
-      category: 'Electronics',
-      status: 'Active',
-      price: '$199.99',
-    },
-    {
-      key: '4',
-      name: 'Running Shoes',
-      category: 'Sports',
-      status: 'Active',
-      price: '$89.99',
-    },
-  ];
-
   const columns = [
     {
       title: 'Product Name',
@@ -106,13 +125,9 @@ const Dashboard = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs ${
-            status === 'Active'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}
-        >
+        <span style={{ 
+          color: status === 'In Stock' ? '#52c41a' : status === 'Out of Stock' ? '#f5222d' : '#faad14'
+        }}>
           {status}
         </span>
       ),
@@ -122,7 +137,16 @@ const Dashboard = () => {
       dataIndex: 'price',
       key: 'price',
     },
+    {
+      title: 'Date Added',
+      dataIndex: 'date',
+      key: 'date',
+    },
   ];
+
+  const handleNavigate = (path) => {
+    navigate(path);
+  };
 
   return (
     <div className="p-4">
@@ -138,7 +162,11 @@ const Dashboard = () => {
                   <FaBox size={24} />
                 </div>
                 <p className="text-sm text-gray-600">Total Products</p>
-                <h2 className="text-2xl font-bold">1,234</h2>
+                {loading ? (
+                  <Spin size="small" />
+                ) : (
+                  <h2 className="text-2xl font-bold">{stats.totalProducts || 0}</h2>
+                )}
               </div>
               <div className="w-24 h-2 bg-blue-200 rounded-full">
                 <div className="w-3/4 h-full bg-blue-600 rounded-full"></div>
@@ -154,7 +182,11 @@ const Dashboard = () => {
                   <FaListUl size={24} />
                 </div>
                 <p className="text-sm text-gray-600">Active Categories</p>
-                <h2 className="text-2xl font-bold">48</h2>
+                {loading ? (
+                  <Spin size="small" />
+                ) : (
+                  <h2 className="text-2xl font-bold">{stats.totalCategories || 0}</h2>
+                )}
               </div>
               <div className="w-24 h-2 bg-green-200 rounded-full">
                 <div className="w-3/4 h-full bg-green-600 rounded-full"></div>
@@ -170,7 +202,11 @@ const Dashboard = () => {
                   <FaPercentage size={24} />
                 </div>
                 <p className="text-sm text-gray-600">Active Promotions</p>
-                <h2 className="text-2xl font-bold">15</h2>
+                {loading ? (
+                  <Spin size="small" />
+                ) : (
+                  <h2 className="text-2xl font-bold">{stats.totalPromotions || 0}</h2>
+                )}
               </div>
               <div className="w-24 h-2 bg-purple-200 rounded-full">
                 <div className="w-3/4 h-full bg-purple-600 rounded-full"></div>
@@ -186,7 +222,11 @@ const Dashboard = () => {
                   <FaUsers size={24} />
                 </div>
                 <p className="text-sm text-gray-600">Active Sellers</p>
-                <h2 className="text-2xl font-bold">256</h2>
+                {loading ? (
+                  <Spin size="small" />
+                ) : (
+                  <h2 className="text-2xl font-bold">{stats.totalUsers || 0}</h2>
+                )}
               </div>
               <div className="w-24 h-2 bg-red-200 rounded-full">
                 <div className="w-3/4 h-full bg-red-600 rounded-full"></div>
@@ -223,6 +263,7 @@ const Dashboard = () => {
           <Card
             bordered={false}
             className="bg-blue-50 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleNavigate('/Content-Admin/category')}
           >
             <div className="text-blue-600 mb-2">
               <FaListUl size={24} />
@@ -235,6 +276,7 @@ const Dashboard = () => {
           <Card
             bordered={false}
             className="bg-green-50 cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleNavigate('/Content-Admin/Promotion')}
           >
             <div className="text-green-600 mb-2">
               <FaPercentage size={24} />
@@ -243,18 +285,7 @@ const Dashboard = () => {
             <p className="text-sm text-gray-600">Manage active promotions</p>
           </Card>
         </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            bordered={false}
-            className="bg-red-50 cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <div className="text-red-600 mb-2">
-              <FaBox size={24} />
-            </div>
-            <h3 className="font-semibold">Statistics</h3>
-            <p className="text-sm text-gray-600">View detailed reports</p>
-          </Card>
-        </Col>
+      
       </Row>
     </div>
   );
