@@ -213,20 +213,29 @@ const AddProduct = () => {
     });
   };
 
-  // Function to get location name from coordinates
-  const getLocationName = async (lat, lng) => {
-    try {
-      setIsLoadingLocation(true);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
-      );
-      const data = await response.json();
-      return data.display_name || 'Location name not found';
-    } catch (error) {
-      console.error('Error getting location name:', error);
-      return 'Error getting location name';
-    } finally {
-      setIsLoadingLocation(false);
+  // Function to get location name from coordinates with retry logic
+  const getLocationName = async (lat, lng, retries = 3, delay = 2000) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        setIsLoadingLocation(true);
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.display_name || 'Location name not found';
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, error);
+        if (attempt === retries) {
+          return 'Error getting location name - Please check your internet connection';
+        }
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } finally {
+        setIsLoadingLocation(false);
+      }
     }
   };
 
