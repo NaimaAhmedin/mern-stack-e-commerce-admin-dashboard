@@ -1,6 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Row, Col } from 'antd';
-import {
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+import { 
+  FaUsers, 
+  FaUserTie, 
+  FaUsersCog, 
+  FaShoppingCart 
+} from 'react-icons/fa';
+import { 
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -12,7 +21,6 @@ import {
   Legend,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import { FaUsers, FaShoppingCart, FaUserTie, FaFileAlt } from 'react-icons/fa';
 
 // Register ChartJS components
 ChartJS.register(
@@ -27,7 +35,48 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  // Sample data for monthly sales performance
+  const navigate = useNavigate();
+
+  const [dashboardStats, setDashboardStats] = useState({
+    totalUsers: 0,
+    totalAdmins: 0,
+    totalSellers: 0,
+    totalSales: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('/api/superadmin/stats', {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+    
+        // Update to use response.data.data
+        setDashboardStats({
+          totalUsers: response.data.data.totalUsers || 0,
+          totalAdmins: response.data.data.totalAdmins || 0,
+          totalSellers: response.data.data.totalSellers || 0,
+          totalSales: response.data.data.totalSalesAmount || 0
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error('Dashboard fetch error:', error);
+        // Update error handling
+        setError(error.response?.data?.message || 'An error occurred');
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
+  // Sample chart data (you can replace with actual data later)
   const salesData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
@@ -37,18 +86,6 @@ const Dashboard = () => {
         fill: false,
         borderColor: 'rgb(75, 192, 192)',
         tension: 0.4,
-      },
-    ],
-  };
-
-  // Sample data for weekly user activity
-  const userActivityData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-      {
-        label: 'Active Users',
-        data: [120, 190, 150, 180, 200, 170, 160],
-        backgroundColor: '#95DE64',
       },
     ],
   };
@@ -76,12 +113,26 @@ const Dashboard = () => {
     },
   };
 
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  const handleSetting = () => {
+    navigate('/admin/Profile');
+  };
+
+  const handleAddAdmins = () => {
+    navigate('/admin/AddAdmin');
+  };
+
+  const handleManageUsers = () => {
+    navigate('/admin/ViewAllUsers');
+  };
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-6">Super Admin Dashboard</h1>
 
       {/* Stats Cards */}
       <Row gutter={[16, 16]} className="mb-6">
+        {/* Total Users Card */}
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="bg-blue-50 h-full">
             <div className="flex items-center justify-between">
@@ -90,7 +141,7 @@ const Dashboard = () => {
                   <FaUsers size={24} />
                 </div>
                 <p className="text-sm text-gray-600">Total Users</p>
-                <h2 className="text-2xl font-bold">112,893</h2>
+                <h2 className="text-2xl font-bold">{dashboardStats.totalUsers.toLocaleString()}</h2>
               </div>
               <div className="w-24 h-2 bg-blue-200 rounded-full">
                 <div className="w-3/4 h-full bg-blue-600 rounded-full"></div>
@@ -98,15 +149,17 @@ const Dashboard = () => {
             </div>
           </Card>
         </Col>
+
+        {/* Total Admins Card */}
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="bg-green-50 h-full">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-green-600 mb-2">
-                  <FaShoppingCart size={24} />
+                  <FaUsersCog size={24} />
                 </div>
-                <p className="text-sm text-gray-600">Total Sales</p>
-                <h2 className="text-2xl font-bold">$150,000</h2>
+                <p className="text-sm text-gray-600">Total Admins</p>
+                <h2 className="text-2xl font-bold">{dashboardStats.totalAdmins.toLocaleString()}</h2>
               </div>
               <div className="w-24 h-2 bg-green-200 rounded-full">
                 <div className="w-3/4 h-full bg-green-600 rounded-full"></div>
@@ -114,6 +167,8 @@ const Dashboard = () => {
             </div>
           </Card>
         </Col>
+
+        {/* Total Sellers Card */}
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="bg-purple-50 h-full">
             <div className="flex items-center justify-between">
@@ -121,8 +176,8 @@ const Dashboard = () => {
                 <div className="text-purple-600 mb-2">
                   <FaUserTie size={24} />
                 </div>
-                <p className="text-sm text-gray-600">Active Sellers</p>
-                <h2 className="text-2xl font-bold">75+</h2>
+                <p className="text-sm text-gray-600">Total Sellers</p>
+                <h2 className="text-2xl font-bold">{dashboardStats.totalSellers.toLocaleString()}</h2>
               </div>
               <div className="w-24 h-2 bg-purple-200 rounded-full">
                 <div className="w-3/4 h-full bg-purple-600 rounded-full"></div>
@@ -130,15 +185,17 @@ const Dashboard = () => {
             </div>
           </Card>
         </Col>
+
+        {/* Total Sales Card */}
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="bg-red-50 h-full">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-red-600 mb-2">
-                  <FaFileAlt size={24} />
+                  <FaShoppingCart size={24} />
                 </div>
-                <p className="text-sm text-gray-600">Reports</p>
-                <h2 className="text-2xl font-bold">93</h2>
+                <p className="text-sm text-gray-600">Total Sales</p>
+                <h2 className="text-2xl font-bold">{dashboardStats.totalSales.toLocaleString()}</h2>
               </div>
               <div className="w-24 h-2 bg-red-200 rounded-full">
                 <div className="w-3/4 h-full bg-red-600 rounded-full"></div>
@@ -148,28 +205,39 @@ const Dashboard = () => {
         </Col>
       </Row>
 
-      {/* Charts */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={14}>
-          <Card title="Sales Analytics" bordered={false}>
-            <div style={{ height: '300px' }}>
-              <Line data={salesData} options={chartOptions} />
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} lg={10}>
-          <Card title="User Activity" bordered={false}>
-            <div style={{ height: '300px' }}>
-              <Bar data={userActivityData} options={chartOptions} />
-            </div>
-          </Card>
-        </Col>
-      </Row>
+     {/* Sales Analysis - Full Width */}
+    <Row gutter={[16, 16]} className="mb-6">
+      <Col xs={24}>
+        <Card title="Sales Analysis" bordered={false}>
+          <div style={{ height: '400px' }}>
+            <Line 
+              data={salesData} 
+              options={{
+                ...chartOptions,
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'top'
+                  },
+                  title: {
+                    display: true,
+                    text: 'Monthly Sales Overview'
+                  }
+                }
+              }} 
+            />
+          </div>
+        </Card>
+      </Col>
+    </Row>
 
       {/* Quick Actions */}
       <Row gutter={[16, 16]} className="mt-6">
         <Col xs={24} sm={8}>
           <Card
+           onClick={handleSetting}
             bordered={false}
             className="bg-blue-50 cursor-pointer hover:shadow-md transition-shadow"
           >
@@ -182,26 +250,28 @@ const Dashboard = () => {
         </Col>
         <Col xs={24} sm={8}>
           <Card
+           onClick={handleAddAdmins}
             bordered={false}
             className="bg-green-50 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="text-green-600 mb-2">
-              <FaShoppingCart size={24} />
+              <FaUsersCog size={24} />
             </div>
-            <h3 className="font-semibold">Statistics</h3>
-            <p className="text-sm text-gray-600">View detailed analytics</p>
+            <h3 className="font-semibold">Add Admins</h3>
+            <p className="text-sm text-gray-600">Create new admin account</p>
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card
+           onClick={handleManageUsers}
             bordered={false}
             className="bg-red-50 cursor-pointer hover:shadow-md transition-shadow"
           >
             <div className="text-red-600 mb-2">
-              <FaFileAlt size={24} />
+              <FaUserTie size={24} />
             </div>
-            <h3 className="font-semibold">Performance</h3>
-            <p className="text-sm text-gray-600">Monitor system metrics</p>
+            <h3 className="font-semibold">Manage users</h3>
+            <p className="text-sm text-gray-600">Monitor system users</p>
           </Card>
         </Col>
       </Row>

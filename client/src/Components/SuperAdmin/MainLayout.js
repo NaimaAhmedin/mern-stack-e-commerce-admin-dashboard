@@ -1,149 +1,222 @@
-import React, { useState } from 'react';
-import {
-  MenuFoldOutlined,
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Layout, Menu, theme, Dropdown } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { useNavigate, Outlet } from 'react-router-dom';
+import { MdDashboard, MdOutlineContentPasteSearch, MdOutlineControlCamera } from 'react-icons/md';
+import { IoMdSettings, IoMdNotifications, IoMdPerson } from 'react-icons/io';
+import { CgProfile } from 'react-icons/cg';
+import { FcMoneyTransfer } from 'react-icons/fc';
+import { AiOutlineOrderedList, AiOutlineBarChart } from 'react-icons/ai';
+import { FaUsers, FaCog, FaChartLine } from 'react-icons/fa';
 
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import {  Layout, Menu, theme } from 'antd';
-import { AiOutlineDashboard } from "react-icons/ai";
-import { IoMdNotifications } from "react-icons/io";
-import { FaUsersCog,FaUsers,FaUserPlus,FaChartLine,FaUserCircle,FaCog } from "react-icons/fa";
-import{Outlet} from "react-router-dom"
-const { Header, Sider, Content } = Layout;
-const MainLayout = () => {
+const SuperAdminMainLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '',
+    profileImage: null
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-  const navigate=useNavigate();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchSuperAdminProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/');
+          return;
+        }
+    
+        const response = await axios.get('/api/users/superadmin/menu-profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+    
+        // Update profile data
+        setProfileData({
+          name: response.data.data.name || '',
+          email: response.data.data.email || '',
+          profileImage: response.data.data.profileImage
+        });
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching superadmin profile:', error);
+        setError(error);
+        setIsLoading(false);
+        
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/');
+        }
+      }
+    };
+
+    fetchSuperAdminProfile();
+  }, [navigate]);
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading superadmin profile...</p>
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error) {
+    return (
+      <div className="error-container">
+        <p>Error loading profile. Please try again later.</p>
+        <button onClick={() => window.location.reload()}>Reload</button>
+      </div>
+    );
+  }
+
+  const profileMenu = (
+    <Menu
+      onClick={({ key }) => {
+        switch(key) {
+          case "signout":
+            localStorage.removeItem('token');
+            navigate('/');
+            break;
+          case "profile":
+            navigate('/admin/Profile');
+            break;
+          default:
+            break;
+        }
+      }}
+      items={[
+        {
+          label: 'Profile',
+          key: 'profile',
+          icon: <CgProfile />,
+        },
+        {
+          label: 'Sign Out',
+          key: 'signout',
+          icon: <MdOutlineControlCamera />,
+        },
+      ]}
+    />
+  );
+
   return (
     <Layout>
-      <Sider trigger={null} collapsible collapsed={collapsed}>
+      <Layout.Sider trigger={null} collapsible collapsed={collapsed}>
         <div className="logo">
-            <h2 className="text-white fs-5  text-center py-4 mb-0">Markato</h2>
+          <h2 className="text-white fs-5 text-center py-4 mb-0">Markato</h2>
         </div>
         <Menu
           theme="dark"
           mode="inline"
-          defaultSelectedKeys={[""]}
-          onClick={ ({ key })=>{
-            if (key === "signout"){}
-            else {
-                navigate(key);
+          defaultSelectedKeys={["dashboard"]}
+          onClick={({ key }) => {
+            if (key !== "signout") {
+              navigate(key);
             }
           }}
           items={[
             {
-              key: '',
-              icon: <AiOutlineDashboard className='fs-4' />,
+              key: "dashboard",
+              icon: <MdDashboard className="fs-4" />,
               label: 'Dashboard',
             },
             {
-              key: 'ManageAdmin',
-              icon: <FaUsersCog className='fs-4' />, // Icon for managing admins
-              label: 'Manage Admin',
+              key: "user-management",
+              icon: <FaUsers className="fs-4" />,
+              label: 'User Management',
               children: [
                 {
-                  key: 'AdminList',
-                  icon: <FaUserCircle className='fs-4' />,  // Icon for user profile or admin
-                  label: 'All Admins',
+                  key: "/admin/ViewAllUsers",
+                  icon: <IoMdPerson className="fs-4" />,
+                  label: 'All Users',
                 },
                 {
-                  key: 'DeliveryAdmins',
-                  icon: <FaUserCircle className='fs-4' />,  // Icon for delivery admin
-                  label: 'Delivery Admins',
-                },
-                {
-                  key: 'ContentAdmins',
-                  icon: <FaUserCircle className='fs-4' />,  // Icon for content admin
-                  label: 'Content Admins',
-                },
-                {
-                  key: 'AddAdmin',
-                  icon: <FaUserPlus className='fs-4' />, // Icon for adding a user
+                  key: "/admin/AddAdmin",
+                  icon: <MdOutlineControlCamera className="fs-4" />,
                   label: 'Add Admin',
                 },
               ],
             },
             {
-              key: 'ManageUsers',
-              icon: <FaUsers className='fs-4' />, // Icon for managing groups of people
-              label: 'Manage Users',
-              children: [
-                {
-                  key: 'ViewAllUsers',
-                  icon: <FaUserCircle className='fs-4' />,  // Icon for user profile or admin
-                  label: 'View All Users',
-                },
-                {
-                  key: 'Sellers',
-                  icon: <FaUserPlus className='fs-4' />, // Icon for adding a user
-                  label: 'Seller',
-                },
-                {
-                  key: 'Customer',
-                  icon: <FaUserPlus className='fs-4' />, // Icon for adding a user
-                  label: 'Customers',
-                },
-              ],
-            },
-           
-            {
-              key: 'ReportsConfig',
-              icon: <FaChartLine className='fs-4' />, // Icon for reports and statistics
-              label: 'Reports & Config',
+              key: "Order-management",
+              icon: <AiOutlineOrderedList className="fs-4" />,
+              label: 'Orders',
             },
             {
-              key: 'Settings',
-              icon: <FaCog className='fs-4' />,  // Changed from FaCo to FaUsers (group icon)
+              key: 'sales-insight',
+              icon: <AiOutlineBarChart className='fs-4' />,
+              label: 'Sales Insights',
+            },
+            {
+              key: "settings",
+              icon: <IoMdSettings  className="fs-4" />,
               label: 'Settings',
               children: [
                 {
-                  key:'Profile',
-                  icon: <FaUserCircle className='fs-4' />,  // Correct profile icon
+                  key: "/admin/Profile",
+                  icon: <CgProfile className="fs-4" />,
                   label: 'Profile',
                 },
               ],
             },
           ]}
         />
-      </Sider>
+      </Layout.Sider>
       <Layout>
-        <Header
+      <Layout.Header
         className="d-flex justify-content-between ps-3 pe-5"
-          style={{
-            padding: 0,
-            background: colorBgContainer,
-          }}
-        >
-            {React.createElement(
-                collapsed?MenuFoldOutlined: MenuFoldOutlined,
-                {
-                    className:"trigger",
-                    onClick:()=> setCollapsed(!collapsed),
-                }
-            )}
-            <div className="d-flex gap-4 align-item-center">
-            <div className="position-relative">
-                <IoMdNotifications className="fs-4"/> <span className="badge bg-warning rounded-circle p-1 position-absolute">3</span>
-                </div>
-            <div className='d-flex gap-3 align-items-center'>
-  <img
-    src='https://i.pinimg.com/originals/d9/0b/e3/d90be382685a71af0369e49b352f0ba1.jpg'
-    className='w-[64px] h-[64px]'
-    alt=''
-    style={{ width: '32px', height: '32px' }}
-  />
-</div>
+        style={{
+          padding: 0,
+          background: colorBgContainer,
+        }}
+      >
+        {React.createElement(
+          collapsed ? MenuUnfoldOutlined : MenuFoldOutlined,
+          {
+            className: "trigger",
+            onClick: () => setCollapsed(!collapsed),
+          }
+        )}
 
-               <div>
-                <h5 className='mb-0'>Super Admin</h5>
-                <p className='mb-0'>admin@gmail.com</p>
-               </div>
+        <div className="d-flex gap-3 align-items-center">
+          <Dropdown 
+            overlay={profileMenu} 
+            placement="bottomRight"
+            trigger={['click']} // Explicitly set trigger to click
+          >
+            <div 
+              className="d-flex align-items-center gap-2 cursor-pointer"
+              onClick={(e) => e.preventDefault()} // Prevent default to ensure dropdown works
+            >
+              <img 
+                src={profileData.profileImage || '/default-avatar.png'} 
+                alt="Profile" 
+                className="rounded-circle" 
+                style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+              />
+              <div>
+                <h5 className="mb-0">{profileData.name}</h5>
+                <p className="mb-0 text-muted">{profileData.email}</p>
+              </div>
             </div>
-         
-        </Header>
-        <Content
+          </Dropdown>
+        </div>
+      </Layout.Header>
+
+
+        <Layout.Content
           style={{
             margin: '24px 16px',
             padding: 24,
@@ -152,10 +225,11 @@ const MainLayout = () => {
             borderRadius: borderRadiusLG,
           }}
         >
-          <Outlet/>
-        </Content>
+          <Outlet />
+        </Layout.Content>
       </Layout>
     </Layout>
   );
 };
-export default MainLayout;
+
+export default SuperAdminMainLayout;

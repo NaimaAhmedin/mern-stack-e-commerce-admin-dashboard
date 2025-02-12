@@ -199,5 +199,35 @@ router.get('/delivery-admin/menu-profile', protect, roleMiddleware(['DeliveryAdm
     });
   }
 });
+router.get('/superadmin/menu-profile', protect, roleMiddleware(['SuperAdmin']), async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select('name email profileImage');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const profileData = {
+      name: user.name,
+      email: user.email,
+      profileImage: user.profileImage?.url || null
+    };
+
+    res.status(200).json({
+      success: true,
+      data: profileData
+    });
+  } catch (error) {
+    console.error('SuperAdmin menu profile error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching superadmin profile'
+    });
+  }
+});
 
 module.exports = router;
