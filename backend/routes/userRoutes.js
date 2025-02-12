@@ -99,6 +99,67 @@ router.delete('/admin/:id',
 router.route('/delete-account')
   .delete(protect, deleteUserAccount);
 
+  router.get('/sellers', protect, roleMiddleware(['ContentAdmin', 'SuperAdmin']), async (req, res) => {
+    try {
+      const sellers = await User.find({ role: 'seller' })
+        .select('name email profileImage status createdAt businessDetails');
+  
+      const formattedSellers = sellers.map(seller => ({
+        id: seller._id,
+        name: seller.name,
+        email: seller.email,
+        profileImage: seller.profileImage?.url || null,
+        status: seller.status || 'Active',
+        businessName: seller.businessDetails?.businessName || 'N/A',
+        joinedDate: seller.createdAt
+      }));
+  
+      res.status(200).json({
+        success: true,
+        data: formattedSellers
+      });
+    } catch (error) {
+      console.error('Error fetching sellers:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching sellers list'
+      });
+    }
+  });
+  
+  // Add suspend/activate route
+  router.put('/sellers/:id/status', protect, roleMiddleware(['ContentAdmin', 'SuperAdmin']), async (req, res) => {
+    try {
+      const { status } = req.body;
+      const seller = await User.findByIdAndUpdate(
+        req.params.id, 
+        { status }, 
+        { new: true }
+      );
+  
+      if (!seller) {
+        return res.status(404).json({
+          success: false,
+          message: 'Seller not found'
+        });
+      }
+  
+      res.status(200).json({
+        success: true,
+        data: {
+          id: seller._id,
+          status: seller.status
+        }
+      });
+    } catch (error) {
+      console.error('Error updating seller status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error updating seller status'
+      });
+    }
+  });
+
 // Seller Menu Profile Route
 router.get('/seller/menu-profile', protect, roleMiddleware(['seller']), async (req, res) => {
   try {

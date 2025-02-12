@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, message, Spin } from 'antd';
+import { 
+  Table, 
+  Button, 
+  Modal, 
+  message, 
+  Spin, 
+  Popconfirm, 
+  Space, 
+  Input 
+} from 'antd';
+import { 
+  DeleteOutlined, 
+  EyeOutlined, 
+  SearchOutlined 
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { MdSearch } from "react-icons/md";
 import { deleteProduct, getProducts } from '../../services/productService';
 
 const ProductControl = () => {
@@ -11,46 +24,43 @@ const ProductControl = () => {
   const [categoryFilters, setCategoryFilters] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const response = await getProducts();
-      console.log('Products response:', response); // Debug response
+      console.log('Products response:', response);
 
-      // Check if response has the expected structure
       if (response && (Array.isArray(response) || Array.isArray(response.data))) {
         const productsArray = Array.isArray(response) ? response : response.data;
         
-        const formattedProducts = productsArray.map((product, index) => {
-          console.log('Processing product:', product); // Debug individual product
-          return {
-            key: product._id,           
-            seller: product.seller_id?.name || 'N/A',
-            id: product._id,
-            name: product.name || 'N/A',
-            brand: product.brand || 'N/A',
-            category: product.categoryId?.name || 'N/A',
-            color: product.color || 'N/A',
-            price: product.price || 0,
-            stock: product.quantity || 0,
-            description: product.description || 'N/A',
-            images: product.images || [],
-            image: product.image || null,
-            warranty: product.warranty || 0,
-            subcategory: product.subcategoryId?.name || 'N/A',
-            categoryId: product.categoryId?._id,
-            subcategoryId: product.subcategoryId?._id,
-            createdAt: product.createdAt
-          };
-        });
+        const formattedProducts = productsArray.map((product) => ({
+          key: product._id,           
+          seller: product.seller_id?.name || 'N/A',
+          id: product._id,
+          name: product.name || 'N/A',
+          brand: product.brand || 'N/A',
+          category: product.categoryId?.name || 'N/A',
+          color: product.color || 'N/A',
+          price: product.price || 0,
+          stock: product.quantity || 0,
+          description: product.description || 'N/A',
+          images: product.images || [],
+          image: product.image || null,
+          warranty: product.warranty || 0,
+          subcategory: product.subcategoryId?.name || 'N/A',
+          categoryId: product.categoryId?._id,
+          subcategoryId: product.subcategoryId?._id,
+          createdAt: product.createdAt
+        }));
 
-        console.log('Formatted products:', formattedProducts); // Debug formatted products
         setProducts(formattedProducts);
         
         // Extract unique categories
         const categories = [...new Set(formattedProducts.map(product => product.category))];
         setCategoryFilters(categories.map(cat => ({ text: cat, value: cat })));
       } else {
-        console.error('Invalid products response:', response); // Debug invalid response
+        console.error('Invalid products response:', response);
         message.error('Invalid products data received');
         setProducts([]);
         setCategoryFilters([]);
@@ -65,37 +75,21 @@ const ProductControl = () => {
     }
   };
 
-useEffect(() => {
-  fetchProducts();
-}, []);
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
- // Filtered products based on search input
- const filteredProducts = Array.isArray(products) 
- ? products.filter((product) =>
-  product.name.toLowerCase().includes(searchTerm.toLowerCase())
-   )
- : [];
-
-  // const filteredProducts = products.filter(product =>
-  //   product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  // );
-
- // Handle select/deselect for individual products
- const toggleSelectProduct = (id) => {
-  setSelectedProducts(prev =>
-    prev.includes(id) ? prev.filter(productId => productId !== id) : [...prev, id]
+  // Filtered products based on search input
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-};
 
- // Handle select/deselect all
- const toggleSelectAll = () => {
-  if (selectedProducts.length === filteredProducts.length) {
-    setSelectedProducts([]);
-  } else {
-    const allProductIds = filteredProducts.map(product => product.id);
-    setSelectedProducts(allProductIds);
-  }
-};
+  // Handle select/deselect for individual products
+  const toggleSelectProduct = (id) => {
+    setSelectedProducts(prev =>
+      prev.includes(id) ? prev.filter(productId => productId !== id) : [...prev, id]
+    );
+  };
 
   // Delete selected products
   const handleDeleteSelected = async () => {
@@ -104,27 +98,35 @@ useEffect(() => {
       return;
     }
 
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete ${selectedProducts.length} ${
+    Modal.confirm({
+      title: 'Confirm Deletion',
+      content: `Are you sure you want to delete ${selectedProducts.length} ${
         selectedProducts.length === 1 ? "product" : "products"
-      }?`
-    );
-
-    if (!confirmDelete) return;
-
-    try {
-      await Promise.all(selectedProducts.map(id => deleteProduct(id)));
-      message.success(`Successfully deleted ${selectedProducts.length} products`);
-      setSelectedProducts([]);
-      fetchProducts(); // Refresh the product list
-    } catch (err) {
-      console.error('Error deleting products:', err);
-      message.error('Failed to delete some products');
-    }
+      }?`,
+      onOk: async () => {
+        try {
+          await Promise.all(selectedProducts.map(id => deleteProduct(id)));
+          message.success(`Successfully deleted ${selectedProducts.length} products`);
+          setSelectedProducts([]);
+          fetchProducts(); // Refresh the product list
+        } catch (err) {
+          console.error('Error deleting products:', err);
+          message.error('Failed to delete some products');
+        }
+      }
+    });
   };
 
-  const handleEdit = (id) => {
-    navigate(`/seller/ProductList/product/edit/${id}`);
+  // New method to handle individual product deletion
+  const handleDeleteProduct = async (productId) => {
+    try {
+      await deleteProduct(productId);
+      message.success('Product deleted successfully');
+      fetchProducts(); // Refresh the product list
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      message.error('Failed to delete product');
+    }
   };
 
   const handleViewDetails = (product) => {
@@ -204,149 +206,104 @@ useEffect(() => {
     );
   }
 
-  return (
-    <div className="p-4 bg-gray-100 min-h-screen">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Products</h1>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-full pr-10 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
-            <MdSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
-          </div>
-          {selectedProducts.length > 0 && (
-            <Button
-              type="primary"
-              danger
-              onClick={handleDeleteSelected}
-              className="bg-orange-500 hover:bg-orange-600 rounded-full flex items-center gap-2"
+  const columns = [
+    {
+      title: 'Product Name',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category',
+      key: 'category',
+      filters: categoryFilters,
+      onFilter: (value, record) => record.category === value,
+    },
+    {
+      title: 'Brand',
+      dataIndex: 'brand',
+      key: 'brand',
+    },
+    {
+      title: 'Price',
+      dataIndex: 'price',
+      key: 'price',
+      render: (price) => `$${price.toFixed(2)}`
+    },
+    {
+      title: 'Stock',
+      dataIndex: 'stock',
+      key: 'stock',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button 
+            type="link" 
+            icon={<EyeOutlined />} 
+            onClick={() => handleViewDetails(record)}
+          >
+            Detail
+          </Button>
+          <Popconfirm
+            title="Are you sure you want to delete this product?"
+            onConfirm={() => handleDeleteProduct(record.id)}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button 
+              type="link" 
+              danger 
+              icon={<DeleteOutlined />}
             >
-              Delete Selected ({selectedProducts.length})
+              Delete
             </Button>
-          )}
-        </div>
-      </div>
+          </Popconfirm>
+        </Space>
+      )
+    }
+  ];
 
-      <Table dataSource={filteredProducts} pagination={false} rowKey="key">
-        {/* Select column */}
-        <Table.Column
-          title={
-            <input
-              type="checkbox"
-              checked={selectedProducts.length === filteredProducts.length}
-              onChange={toggleSelectAll}
-            />
-          }
-          key="select"
-          render={(_, record) => (
-            <input
-              type="checkbox"
-              checked={selectedProducts.includes(record.id)}
-              onChange={() => toggleSelectProduct(record.id)}
-            />
-          )}
-        />
-        <Table.Column 
-          title={<span className="font-semibold text-lg">SNo</span>} 
-          dataIndex="key" 
-          key="key" 
-          render={(text, record, index) => <span className="font-semibold">{index + 1}</span>} 
-          
-        />
-      {/* <Table.Column 
-          title={<span className="font-semibold text-lg">Product ID</span>} 
-          dataIndex="id" 
-          key="id" 
-          render={(text) => <span className="font-semibold">{text}</span>} 
-        /> */}
-        <Table.Column 
-          title={<span className="font-semibold text-lg">Name</span>} 
-          dataIndex="name" 
-          key="name" 
-          render={(text) => <span className="font-semibold">{text}</span>} 
-        />
-        <Table.Column 
-    title= "Category"
-    dataIndex= "category"
-    filters={categoryFilters}
-    onFilter={(value, record) => record.category.includes(value)} 
-  />
-       <Table.Column 
-          title="Price" 
-          dataIndex="price" 
-          key="price" 
-          render={(price) => price !== undefined && price !== null ? `${price.toFixed(2)}` : 'N/A'}
-        />
-        <Table.Column 
-          title="Posted Time" 
-          dataIndex="createdAt" 
-          key="postedTime"
-          render={(timestamp) => {
-            if (!timestamp) return 'N/A';
-            try {
-              const date = new Date(timestamp);
-              return date.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              });
-            } catch (err) {
-              console.error('Error formatting time:', err);
-              return 'Invalid Time';
-            }
-          }}
-        />
-        <Table.Column 
-          title="Posted Date" 
-          dataIndex="createdAt" 
-          key="postedDate"
-          render={(timestamp) => {
-            if (!timestamp) return 'N/A';
-            try {
-              const date = new Date(timestamp);
-              return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              });
-            } catch (err) {
-              console.error('Error formatting date:', err);
-              return 'Invalid Date';
-            }
-          }}
-          sorter={(a, b) => {
-            if (!a.createdAt || !b.createdAt) return 0;
-            return new Date(a.createdAt) - new Date(b.createdAt);
-          }}
-        />
-        <Table.Column 
-          title="Stock" 
-          dataIndex="stock" 
-          key="stock" 
-        />
-        <Table.Column
-  title="Action"
-  key="action"
-  render={(text, record) => (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-      <Button type="link" onClick={() => handleViewDetails(record)}>
-        Detail
-      </Button>
-      <Button 
-        type="link" 
-        onClick={() => handleEdit(record.id)}
-      >
-        Edit
-      </Button>
-    </div>
-  )}
-/>
-      </Table>
+  return (
+    <div>
+      <Table 
+        columns={columns}
+        dataSource={filteredProducts}
+        loading={loading}
+        rowSelection={{
+          selectedRowKeys: selectedProducts,
+          onChange: (selectedRowKeys) => setSelectedProducts(selectedRowKeys),
+        }}
+        pagination={{ 
+          pageSize: 10, 
+          showSizeChanger: true 
+        }}
+        title={() => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <Button 
+                type="primary" 
+                danger 
+                disabled={selectedProducts.length === 0}
+                onClick={handleDeleteSelected}
+              >
+                Delete Selected
+              </Button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <Input 
+                prefix={<SearchOutlined />}
+                placeholder="Search products" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: 200 }}
+              />
+            </div>
+          </div>
+        )}
+      />
     </div>
   );
 };
