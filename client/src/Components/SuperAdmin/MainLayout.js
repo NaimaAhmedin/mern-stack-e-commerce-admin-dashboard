@@ -150,16 +150,6 @@ const SuperAdminMainLayout = () => {
               ],
             },
             {
-              key: "Order-management",
-              icon: <AiOutlineOrderedList className="fs-4" />,
-              label: 'Orders',
-            },
-            {
-              key: 'sales-insight',
-              icon: <AiOutlineBarChart className='fs-4' />,
-              label: 'Sales Insights',
-            },
-            {
               key: "settings",
               icon: <IoMdSettings  className="fs-4" />,
               label: 'Settings',
